@@ -1,1 +1,7 @@
 /Library/
+/*.png
+/Assembly-CSharp-vs.csproj
+/Assembly-CSharp.csproj
+/UserFaceManagement-csharp.sln
+/UserFaceManagement.sln
+/UserFaceManagement.userprefs
