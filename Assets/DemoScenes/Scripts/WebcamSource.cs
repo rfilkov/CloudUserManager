@@ -49,7 +49,10 @@ public class WebcamSource : MonoBehaviour
 			transform.localScale = new Vector3(-scale.x, scale.y, scale.z);
 		}
 
-		webcamTex.Play();
+		if(webcamTex && !string.IsNullOrEmpty(webcamTex.deviceName))
+		{
+			webcamTex.Play();
+		}
 	}
 
 
