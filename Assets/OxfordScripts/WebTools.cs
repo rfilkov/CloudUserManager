@@ -11,73 +11,6 @@ public class WebTools
 {
 
 	// calls web service with url, content and headers
-	public static WWW CallWebService(string requestUrl, string contentType, byte[] content, Dictionary<string, string> headers, bool bAwaitResponse, bool bStopOnError)
-	{
-		headers.Add("Content-Type", contentType);
-		headers.Add("Content-Length", content.Length.ToString());
-
-		WWW www = new WWW(requestUrl, content, headers);
-
-		while(bAwaitResponse && !www.isDone)
-		{
-			System.Threading.Thread.Sleep(20);
-		}
-		
-		if (bStopOnError && !string.IsNullOrEmpty(www.error)) 
-		{
-			throw new Exception(www.error + " - " + requestUrl);
-		}
-
-		return www;
-	}
-
-	// returns the response status code
-	public static int GetStatusCode(WWW request)
-	{
-		int status = -1;
-
-		if(request != null && request.responseHeaders != null && request.responseHeaders.ContainsKey("STATUS"))
-		{
-			string statusLine = request.responseHeaders["STATUS"];
-			string[] statusComps = statusLine.Split(' ');
-
-			if (statusComps.Length >= 3)
-			{
-				int.TryParse(statusComps[1], out status);
-			}
-		}
-
-		return status;
-	}
-
-	// checks if the response status is error
-	public static bool IsErrorStatus(WWW request)
-	{
-		int status = GetStatusCode(request);
-		return (status >= 300);
-	}
-
-	// returns the response status message
-	public static string GetStatusMessage(WWW request)
-	{
-		string message = string.Empty;
-		
-		if(request != null && request.responseHeaders != null && request.responseHeaders.ContainsKey("STATUS"))
-		{
-			string statusLine = request.responseHeaders["STATUS"];
-			string[] statusComps = statusLine.Split(' ');
-
-			for(int i = 2; i < statusComps.Length; i++)
-			{
-				message += " " + statusComps[i];
-			}
-		}
-		
-		return message.Trim();
-	}
-	
-
-	// calls web service with url, content and headers
 	public static HttpWebResponse DoWebRequest(string requestUrl, string method, string contentType, byte[] content, Dictionary<string, string> headers, bool bAwaitResponse, bool bStopOnError)
 	{
 		ServicePointManager.ServerCertificateValidationCallback = MyRemoteCertificateValidationCallback;
@@ -98,31 +31,27 @@ public class WebTools
 			stream.Write(content, 0, content.Length);
 		}
 
-		HttpWebResponse httpResponse = (HttpWebResponse)webRequest.GetResponse();
-		using (StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream()))
-		{
-			string responseText = streamReader.ReadToEnd();
-			//Now you have your response.
-			//or false depending on information in the response
-			Debug.Log(responseText);            
-		}
+		// 'bAwaitResponse = false' - not yet implemented
+		HttpWebResponse httpResponse = null;
 
-//		WWW www = new WWW(requestUrl, content, headers);
-//		
-//		while(bAwaitResponse && !www.isDone)
-//		{
-//			System.Threading.Thread.Sleep(20);
-//		}
-//		
-//		if (bStopOnError && !string.IsNullOrEmpty(www.error)) 
-//		{
-//			throw new Exception(www.error + " - " + requestUrl);
-//		}
+		try 
+		{
+			httpResponse = (HttpWebResponse)webRequest.GetResponse();
+		} 
+		catch (WebException ex) 
+		{
+			httpResponse = (HttpWebResponse)ex.Response;
+
+			if(bStopOnError)
+			{
+				throw new Exception(ex.Message + " - " + requestUrl);
+			}
+		}
 
 		return httpResponse;
 	}
 
-	public static bool MyRemoteCertificateValidationCallback(System.Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) 
+	private static bool MyRemoteCertificateValidationCallback(System.Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) 
 	{
 		bool isOk = true;
 
@@ -148,4 +77,41 @@ public class WebTools
 		}
 		return isOk;
 	}
+
+
+	// returns the response status code
+	public static int GetStatusCode(HttpWebResponse response)
+	{
+		int status = -1;
+		
+		if(response != null)
+		{
+			status = (int)response.StatusCode;
+		}
+		
+		return status;
+	}
+	
+	// checks if the response status is error
+	public static bool IsErrorStatus(HttpWebResponse response)
+	{
+		int status = GetStatusCode(response);
+		return (status >= 300);
+	}
+	
+	// returns the response status message
+	public static string GetStatusMessage(HttpWebResponse response)
+	{
+		string message = string.Empty;
+		
+		if(response != null)
+		{
+			message = response.StatusDescription;
+		}
+		
+		return message.Trim();
+	}
+	
+	
+
 }

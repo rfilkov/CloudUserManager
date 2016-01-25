@@ -5,6 +5,8 @@ using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
 using System.Text;
 using System;
+using System.Net;
+using System.IO;
 
 
 public class FaceManager : MonoBehaviour 
@@ -85,16 +87,17 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		WWW www = WebTools.CallWebService(requestUrl, "application/octet-stream", imageBytes, headers, true, false);
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 		
 		Face[] faces = null;
-		if(!WebTools.IsErrorStatus(www))
+		if(!WebTools.IsErrorStatus(response))
 		{
-			faces = JsonConvert.DeserializeObject<Face[]>(www.text, jsonSettings);
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
 		}
 		else
 		{
-			ProcessFaceError(www);
+			ProcessFaceError(response);
 		}
 		
 		return faces;
@@ -143,23 +146,25 @@ public class FaceManager : MonoBehaviour
 
 		string sJsonContent = JsonConvert.SerializeObject(new { name = name, userData = userData }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
-		var www = WebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
 		
-//		if(WebTools.IsErrorStatus(www))
-//		{
-//			ProcessFaceError(www);
-//			return false;
-//		}
+		if(WebTools.IsErrorStatus(response))
+		{
+			ProcessFaceError(response);
+			return false;
+		}
 		
 		return true;
 	}
 	
 
 	// processes the error status in response
-	private void ProcessFaceError(WWW www)
+	private void ProcessFaceError(HttpWebResponse response)
 	{
-		ClientError ex = JsonConvert.DeserializeObject<ClientError>(www.text);
-		
+		StreamReader reader = new StreamReader(response.GetResponseStream());
+		string responseText = reader.ReadToEnd();
+
+		ClientError ex = JsonConvert.DeserializeObject<ClientError>(responseText);
 		if (ex.error != null && ex.error.code != null)
 		{
 			string sErrorMsg = !string.IsNullOrEmpty(ex.error.code) && ex.error.code != "Unspecified" ?
@@ -168,8 +173,7 @@ public class FaceManager : MonoBehaviour
 		}
 		else
 		{
-			ServiceError serviceEx = JsonConvert.DeserializeObject<ServiceError>(www.text);
-			
+			ServiceError serviceEx = JsonConvert.DeserializeObject<ServiceError>(responseText);
 			if (serviceEx != null && serviceEx.statusCode != null)
 			{
 				string sErrorMsg = !string.IsNullOrEmpty(serviceEx.statusCode) && serviceEx.statusCode != "Unspecified" ?
@@ -178,7 +182,7 @@ public class FaceManager : MonoBehaviour
 			}
 			else
 			{
-				throw new System.Exception("Error " + WebTools.GetStatusCode(www) + ": " + WebTools.GetStatusMessage(www) + "; Url: " + www.url);
+				throw new System.Exception("Error " + WebTools.GetStatusCode(response) + ": " + WebTools.GetStatusMessage(response) + "; Url: " + response.ResponseUri);
 			}
 		}
 	}
