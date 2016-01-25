@@ -9,6 +9,9 @@ public class WebcamSource : MonoBehaviour
 	public WebCamTexture webcamTex;
 
 
+	private bool bTexResolutionSet = false;
+
+
 	/// <summary>
 	/// Gets webcam snapshot.
 	/// </summary>
@@ -41,6 +44,8 @@ public class WebcamSource : MonoBehaviour
 			webcamTex = new WebCamTexture(webcamName);
 			
 			GetComponent<Renderer>().material.mainTexture = webcamTex;
+			bTexResolutionSet = false;
+
 		}
 
 		if(flipHorizontally)
@@ -52,6 +57,19 @@ public class WebcamSource : MonoBehaviour
 		if(webcamTex && !string.IsNullOrEmpty(webcamTex.deviceName))
 		{
 			webcamTex.Play();
+		}
+	}
+
+
+	void Update()
+	{
+		if(!bTexResolutionSet && webcamTex != null && webcamTex.isPlaying)
+		{
+			Vector3 localScale = transform.localScale;
+			localScale.x = (float)webcamTex.width / (float)webcamTex.height * Mathf.Sign(localScale.x);
+			transform.localScale = localScale;
+
+			bTexResolutionSet = true;
 		}
 	}
 
