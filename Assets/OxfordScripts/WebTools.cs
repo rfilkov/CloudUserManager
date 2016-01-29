@@ -15,8 +15,12 @@ public class WebTools
 	{
 		ServicePointManager.ServerCertificateValidationCallback = MyRemoteCertificateValidationCallback;
 		HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(requestUrl);
-		webRequest.ContentType = contentType;
-		webRequest.ContentLength = content.Length;
+
+		if(contentType != string.Empty && content != null)
+		{
+			webRequest.ContentType = contentType;
+			webRequest.ContentLength = content.Length;
+		}
 
 		foreach(string hName in headers.Keys)
 		{
@@ -24,11 +28,14 @@ public class WebTools
 		}
 
 		webRequest.Method = !string.IsNullOrEmpty(method) ? method : "POST";
-		
-		//using (StreamWriter streamWriter = new StreamWriter(webRequest.GetRequestStream()))
-		using (Stream stream = webRequest.GetRequestStream())
+
+		if(content != null)
 		{
-			stream.Write(content, 0, content.Length);
+			//using (StreamWriter streamWriter = new StreamWriter(webRequest.GetRequestStream()))
+			using (Stream stream = webRequest.GetRequestStream())
+			{
+				stream.Write(content, 0, content.Length);
+			}
 		}
 
 		// 'bAwaitResponse = false' - not yet implemented

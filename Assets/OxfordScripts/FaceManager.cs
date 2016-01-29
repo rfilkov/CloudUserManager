@@ -129,22 +129,22 @@ public class FaceManager : MonoBehaviour
 	/// Creates a person group.
 	/// </summary>
 	/// <returns><c>true</c>, if person group was created, <c>false</c> otherwise.</returns>
-	/// <param name="pgId">Group identifier.</param>
-	/// <param name="name">Group name.</param>
-	/// <param name="userData">User data.</param>
-	public bool CreatePersonGroup(string pgId, string groupName, string userData)
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="name">Group name (max 128 chars).</param>
+	/// <param name="userData">User data (max 16K).</param>
+	public bool CreatePersonGroup(string groupId, string groupName, string userData)
 	{
 		if(string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}", ServiceHost, pgId);
+		string requestUrl = string.Format("{0}/persongroups/{1}", ServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 
-		string sJsonContent = JsonConvert.SerializeObject(new { name = name, userData = userData }, jsonSettings);
+		string sJsonContent = JsonConvert.SerializeObject(new { name = groupName, userData = userData }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
 		
@@ -158,6 +158,211 @@ public class FaceManager : MonoBehaviour
 	}
 	
 
+	/// <summary>
+	/// Lists the people in a person-group.
+	/// </summary>
+	/// <returns>The people in group.</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	public Person[] ListPersonsInGroup(string groupId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", ServiceHost, groupId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+
+		Person[] persons = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			persons = JsonConvert.DeserializeObject<Person[]>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+
+		return persons;
+	}
+	
+
+	/// <summary>
+	/// Adds the person to a group.
+	/// </summary>
+	/// <returns>The person to group.</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="personName">Person name (max 128 chars).</param>
+	/// <param name="userData">User data (max 16K).</param>
+	public Person AddPersonToGroup(string groupId, string personName, string userData)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", ServiceHost, groupId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		string sJsonContent = JsonConvert.SerializeObject(new { name = personName, userData = userData }, jsonSettings);
+		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
+		
+		Person person = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
+
+			if(person.PersonId != null)
+			{
+				person.Name = personName;
+				person.UserData = userData;
+			}
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+
+		return person;
+	}
+	
+
+	/// <summary>
+	/// Adds the face to a person in a person-group.
+	/// </summary>
+	/// <returns>The persisted face (only faceId is set).</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="personId">Person ID.</param>
+	/// <param name="userData">User data.</param>
+	/// <param name="faceRect">Face rect or null.</param>
+	/// <param name="imageBytes">Image bytes.</param>
+	public PersonFace AddFaceToPerson(string groupId, string personId, string userData, FaceRectangle faceRect, Texture2D texImage)
+	{
+		if(texImage == null)
+			return null;
+		
+		byte[] imageBytes = texImage.EncodeToJPG();
+		return AddFaceToPerson(groupId, personId, userData, faceRect, imageBytes);
+	}
+	
+	
+	/// <summary>
+	/// Adds the face to a person in a person-group.
+	/// </summary>
+	/// <returns>The persisted face (only faceId is set).</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="personId">Person ID.</param>
+	/// <param name="userData">User data.</param>
+	/// <param name="faceRect">Face rect or null.</param>
+	/// <param name="imageBytes">Image bytes.</param>
+	public PersonFace AddFaceToPerson(string groupId, string personId, string userData, FaceRectangle faceRect, byte[] imageBytes)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+
+		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.Left, faceRect.Top, faceRect.Width, faceRect.Height) : string.Empty;
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", ServiceHost, groupId, personId, userData, sFaceRect);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		
+		PersonFace face = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			face = JsonConvert.DeserializeObject<PersonFace>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+		
+		return face;
+	}
+
+
+	/// <summary>
+	/// Trains the person-group.
+	/// </summary>
+	/// <returns><c>true</c>, if person-group training was successfully started, <c>false</c> otherwise.</returns>
+	/// <param name="groupId">Group identifier.</param>
+	public bool TrainPersonGroup(string groupId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/train", ServiceHost, groupId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "", null, headers, true, false);
+		
+		if(WebTools.IsErrorStatus(response))
+		{
+			ProcessFaceError(response);
+			return false;
+		}
+		
+		return true;
+	}
+	
+
+	/// <summary>
+	/// Determines whether the person-group's training is finished.
+	/// </summary>
+	/// <returns><c>true</c> if the person-group's training is finished; otherwise, <c>false</c>.</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	public bool IsPersonGroupTrained(string groupId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/training", ServiceHost, groupId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "", null, headers, true, false);
+		
+		TrainingStatus status = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			status = JsonConvert.DeserializeObject<TrainingStatus>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+
+		bool bSuccess = (status != null && status.Status == Status.Succeeded);
+
+		return bSuccess;
+	}
+	
+	
+
+
+	// --------------------------------------------------------------------------------- //
+	
 	// processes the error status in response
 	private void ProcessFaceError(HttpWebResponse response)
 	{
