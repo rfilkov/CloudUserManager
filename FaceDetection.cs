@@ -4,34 +4,34 @@ using System.IO;
 
 public class FaceDetection : MonoBehaviour 
 {
-	[Tooltip("WebCam source used for camera shots.")]
 	public WebcamSource webcamSource;
-
-	[Tooltip("Game object used for camera shot rendering.")]
 	public Renderer cameraShot;
-
-	[Tooltip("Whether to recognize the emotions of the detected faces, or not.")]
-	public bool recognizeEmotions = false;
-	
-	[Tooltip("GUI text used for hints and status messages.")]
+	public Texture initialTexture;
 	public GUIText hintText;
 
-	// used face colors and color names
 	private Color[] faceColors;
 	private string[] faceColorNames;
 
-	// list of detected faces
 	private Face[] faces;
-
-	// GUI scroll variable for the results' list
 	private Vector2 scroll;
 
 
 	void Start () 
 	{
 		// init face colors
-		faceColors = FaceManager.GetFaceColors();
-		faceColorNames = FaceManager.GetFaceColorNames();
+		faceColors = new Color[5];
+		faceColors[0] = Color.green;
+		faceColors[1] = Color.yellow;
+		faceColors[2] = Color.cyan;
+		faceColors[3] = Color.magenta;
+		faceColors[4] = Color.red;
+
+		faceColorNames = new string[5];
+		faceColorNames[0] = "Green";
+		faceColorNames[1] = "Yellow";
+		faceColorNames[2] = "Cyan";
+		faceColorNames[3] = "Magenta";
+		faceColorNames[4] = "Red";
 
 		SetHintText("Click on the camera image to make a shot");
 	}
@@ -39,11 +39,11 @@ public class FaceDetection : MonoBehaviour
 	void Update () 
 	{
 		// check for mouse click
-		if(Input.GetMouseButtonDown(0))
+		if (Input.GetMouseButtonDown(0))
 		{
 			DoMouseClick();
 		}
-
+	
 		if(Input.GetButton("Jump"))
 		{
 			//bool bRes = FaceManager.Instance.CreatePersonGroup("testusers", "Test Users", "group=test");
@@ -51,7 +51,7 @@ public class FaceDetection : MonoBehaviour
 			FaceManager faceManager = FaceManager.Instance;
 			Person[] persons = faceManager.ListPersonsInGroup("testusers");
 			//Person person = faceManager.AddPersonToGroup("testusers", "Tester", "Here I come.");
-			
+
 			foreach(Person person in persons)
 			{
 				if(person != null)
@@ -59,32 +59,26 @@ public class FaceDetection : MonoBehaviour
 					Debug.Log("Person " + person.Name + ", ID: " + person.PersonId);
 				}
 			}
-			
+
 			if(persons.Length > 0)
 			{
 				Texture2D texCamShot = (Texture2D)cameraShot.GetComponent<Renderer>().material.mainTexture;
 				string personId = persons[0].PersonId.ToString();
-				
+
 				// add person face
 				PersonFace face = faceManager.AddFaceToPerson("testusers", personId, string.Empty, null, texCamShot);
 				Debug.Log("Added face: " + face.PersistedFaceId);
-				
+
 				// train the group
 				faceManager.TrainPersonGroup("testusers");
-				
+
 				// check if training is finished
 				Debug.Log("Trained: " + faceManager.IsPersonGroupTrained("testusers"));
 			}
 		}
-
-		// check for Esc, to stop the app
-		if(Input.GetKey(KeyCode.Escape))
-		{
-			Application.Quit();
-		}
 	}
 
-	// invoked on mouse clicks
+	// mouse click
 	private void DoMouseClick()
 	{
 		RaycastHit hit;
@@ -115,7 +109,7 @@ public class FaceDetection : MonoBehaviour
 		
 	}
 	
-	// makes camera shot and displays it on the camera-shot object
+	// camera shot step
 	private bool DoCameraShot()
 	{
 		if(cameraShot && webcamSource)
@@ -133,14 +127,11 @@ public class FaceDetection : MonoBehaviour
 		return false;
 	}
 
-	// imports image and displays it on the camera-shot object
+	// image import
 	private bool DoImageImport()
 	{
-#if UNITY_EDITOR
-		string filePath = UnityEditor.EditorUtility.OpenFilePanel("Open image file", "", "jpg");  // string.Empty; // 
-#else
-		string filePath = string.Empty;
-#endif
+		string filePath = UnityEditor.EditorUtility.OpenFilePanel("Open image file", "", "jpg");
+		
 		if(!string.IsNullOrEmpty(filePath))
 		{
 			byte[] fileBytes = File.ReadAllBytes(filePath);
@@ -163,7 +154,7 @@ public class FaceDetection : MonoBehaviour
 		return false;
 	}
 
-	// performs face detection
+	// face detection
 	private IEnumerator DoFaceDetection()
 	{
 		// get the image to detect
@@ -173,7 +164,6 @@ public class FaceDetection : MonoBehaviour
 		if(cameraShot)
 		{
 			texCamShot = (Texture2D)cameraShot.GetComponent<Renderer>().material.mainTexture;
-			SetHintText("Wait...");
 		}
 
 		yield return null;
@@ -185,41 +175,18 @@ public class FaceDetection : MonoBehaviour
 
 			if(texCamShot && faceManager)
 			{
+				SetHintText("Wait...");
 				faces = faceManager.DetectFaces(texCamShot);
-
+				
 				if(faces != null && faces.Length > 0)
 				{
-					// stick to detected face rectangles
-					FaceRectangle[] faceRects = new FaceRectangle[faces.Length];
-
-					for(int i = 0; i < faces.Length; i++)
-					{
-						faceRects[i] = faces[i].FaceRectangle;
-					}
-
-					// get the emotions of the faces
-					if(recognizeEmotions)
-					{
-						Emotion[] emotions = faceManager.RecognizeEmotions(texCamShot, faceRects);
-						int matched = faceManager.MatchEmotionsToFaces(ref faces, ref emotions);
-						
-						if(matched != faces.Length)
-						{
-							Debug.Log(string.Format("Matched {0}/{1} emotions to {2} faces.", matched, emotions.Length, faces.Length));
-						}
-					}
-
-					FaceManager.DrawFaceRects(texCamShot, faces, faceColors);
+					faceManager.DrawFaceRects(texCamShot, faces, faceColors);
 					SetHintText("Click on the camera image to make a shot");
 				}
 				else
 				{
-					SetHintText("No faces detected.");
+					SetHintText("No face(s) detected.");
 				}
-			}
-			else
-			{
-				SetHintText("Check if the FaceManager component exists in the scene.");
 			}
 		} 
 		catch (System.Exception ex) 
@@ -233,9 +200,6 @@ public class FaceDetection : MonoBehaviour
 
 	void OnGUI()
 	{
-		// set gui font
-		GUI.skin.font = hintText ? hintText.GetComponent<GUIText>().font : GUI.skin.font;
-
 		if(faces != null && faces.Length > 0)
 		{
 			Rect guiResultRect = new Rect(Screen.width / 2, 20, Screen.width / 2, Screen.height - 20);
@@ -256,11 +220,12 @@ public class FaceDetection : MonoBehaviour
 				sbResult.Append(string.Format("{0} face:", faceColorName, face.FaceId)).AppendLine();
 				sbResult.Append(string.Format("    Gender: {0}", face.FaceAttributes.Gender)).AppendLine();
 				sbResult.Append(string.Format("    Age: {0}", face.FaceAttributes.Age)).AppendLine();
-				sbResult.Append(string.Format("    Smile: {0:F0}%", face.FaceAttributes.Smile * 100f)).AppendLine();
-				if(recognizeEmotions)
-					sbResult.Append(string.Format("    Emotion: {0}", FaceManager.GetEmotionScoresAsString(face.Emotion))).AppendLine();
-				sbResult.AppendLine();
+				sbResult.Append(string.Format("    Smile: {0:F0}%", face.FaceAttributes.Smile * 100f)).AppendLine().AppendLine();
 				
+//				sbResult.Append(string.Format("    Beard: {0}", face.FaceAttributes.FacialHair.Beard)).AppendLine();
+//				sbResult.Append(string.Format("    Moustache: {0}", face.FaceAttributes.FacialHair.Moustache)).AppendLine();
+//				sbResult.Append(string.Format("    Sideburns: {0}", face.FaceAttributes.FacialHair.Sideburns)).AppendLine().AppendLine();
+
 				GUILayout.Label(sbResult.ToString());
 
 				GUI.color = guiColor;
@@ -272,7 +237,6 @@ public class FaceDetection : MonoBehaviour
 	}
 
 
-	// displays hint or status text
 	private void SetHintText(string sHintText)
 	{
 		if(hintText)

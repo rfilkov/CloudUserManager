@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class WebcamSource : MonoBehaviour 
+public class GuiWebcam : MonoBehaviour 
 {
 	[Tooltip("Whether the web-camera output needs to be flipped horizontally or not.")]
 	public bool flipHorizontally = false;
@@ -44,10 +44,15 @@ public class WebcamSource : MonoBehaviour
 
 		if(devices != null && devices.Length > 0)
 		{
-			webcamName = devices[0].name;
+			if(string.IsNullOrEmpty(webcamName))
+			{
+				webcamName = devices[0].name;
+			}
+
+			// create webcam tex
 			webcamTex = new WebCamTexture(webcamName);
 			
-			GetComponent<Renderer>().material.mainTexture = webcamTex;
+			GetComponent<GUITexture>().texture = webcamTex;
 			bTexResolutionSet = false;
 
 		}
@@ -70,7 +75,7 @@ public class WebcamSource : MonoBehaviour
 		if(!bTexResolutionSet && webcamTex != null && webcamTex.isPlaying)
 		{
 			Vector3 localScale = transform.localScale;
-			localScale.x = (float)webcamTex.width / (float)webcamTex.height * Mathf.Sign(localScale.x);
+			localScale.x = (float)webcamTex.height / (float)webcamTex.width * Mathf.Sign(localScale.x);
 			transform.localScale = localScale;
 
 			bTexResolutionSet = true;

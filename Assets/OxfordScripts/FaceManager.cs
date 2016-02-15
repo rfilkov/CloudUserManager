@@ -11,15 +11,20 @@ using System.IO;
 
 public class FaceManager : MonoBehaviour 
 {
-
+	[Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
+	
+	[Tooltip("Subscription key for Emotion API.")]
+	public string emotionSubscriptionKey;
 
-	private const string ServiceHost = "https://api.projectoxford.ai/face/v1.0";
+	private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
+	private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
+
 	private static FaceManager instance = null;
 	private bool isInitialized = false;
 
 
-	void Start () 
+	void Awake() 
 	{
 		instance = this;
 
@@ -82,7 +87,7 @@ public class FaceManager : MonoBehaviour
 		}
 
 		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
-		                                  ServiceHost, true, false, "age,gender,smile,headPose");
+		                                  FaceServiceHost, true, false, "age,gender,smile,headPose");
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -104,13 +109,201 @@ public class FaceManager : MonoBehaviour
 	}
 
 
+	/// <summary>
+	/// Recognizes the emotions.
+	/// </summary>
+	/// <returns>The array of recognized emotions.</returns>
+	/// <param name="texImage">Image texture.</param>
+	/// <param name="faceRects">Detected face rectangles, or null.</param>
+	public Emotion[] RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
+	{
+		if(texImage == null)
+			return null;
+		
+		byte[] imageBytes = texImage.EncodeToJPG();
+		return RecognizeEmotions(imageBytes, faceRects);
+	}
+
+
+	/// <summary>
+	/// Recognizes the emotions.
+	/// </summary>
+	/// <returns>The array of recognized emotions.</returns>
+	/// <param name="imageBytes">Image bytes.</param>
+	/// <param name="faceRects">Detected face rectangles, or null.</param>
+	public Emotion[] RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
+	{
+		if(string.IsNullOrEmpty(emotionSubscriptionKey))
+		{
+			throw new Exception("The emotion-subscription key is not set.");
+		}
+		
+		StringBuilder faceRectsStr = new StringBuilder();
+		if(faceRects != null)
+		{
+			foreach(FaceRectangle rect in faceRects)
+			{
+				faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.Left, rect.Top, rect.Width, rect.Height);
+			}
+			
+			faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
+		}
+		
+		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		
+		Emotion[] emotions = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+		
+		return emotions;
+	}
+	
+	
+	/// <summary>
+	/// Matches the recognized emotions to faces.
+	/// </summary>
+	/// <returns>The number of matched emotions.</returns>
+	/// <param name="faces">Array of detected Faces.</param>
+	/// <param name="emotions">Array of recognized Emotions.</param>
+	public int MatchEmotionsToFaces(ref Face[] faces, ref Emotion[] emotions)
+	{
+		int matched = 0;
+		if(faces == null || emotions == null)
+			return matched;
+		
+		foreach(Emotion emot in emotions)
+		{
+			FaceRectangle emotRect = emot.FaceRectangle;
+			
+			for(int i = 0; i < faces.Length; i++)
+			{
+				if(Mathf.Abs(emotRect.Left - faces[i].FaceRectangle.Left) <= 2 &&
+				   Mathf.Abs(emotRect.Top - faces[i].FaceRectangle.Top) <= 2)
+				{
+					faces[i].Emotion = emot;
+					matched++;
+					break;
+				}
+			}
+		}
+		
+		return matched;
+	}
+	
+	
+	/// <summary>
+	/// Gets the emotion scores as string.
+	/// </summary>
+	/// <returns>The emotion as string.</returns>
+	/// <param name="emotion">Emotion.</param>
+	public static string GetEmotionScoresAsString(Emotion emotion)
+	{
+		if(emotion == null || emotion.Scores == null)
+			return string.Empty;
+		
+		Scores es = emotion.Scores; 
+		StringBuilder emotStr = new StringBuilder();
+		
+		if(es.Anger >= 0.01f) emotStr.AppendFormat(" {0:F0}% angry,", es.Anger * 100f);
+		if(es.Contempt >= 0.01f) emotStr.AppendFormat(" {0:F0}% contemptuous,", es.Contempt * 100f);
+		if(es.Disgust >= 0.01f) emotStr.AppendFormat(" {0:F0}% disgusted,", es.Disgust * 100f);
+		if(es.Fear >= 0.01f) emotStr.AppendFormat(" {0:F0}% scared,", es.Fear * 100f);
+		if(es.Happiness >= 0.01f) emotStr.AppendFormat(" {0:F0}% happy,", es.Happiness * 100f);
+		if(es.Neutral >= 0.01f) emotStr.AppendFormat(" {0:F0}% neutral,", es.Neutral * 100f);
+		if(es.Sadness >= 0.01f) emotStr.AppendFormat(" {0:F0}% sad,", es.Sadness * 100f);
+		if(es.Surprise >= 0.01f) emotStr.AppendFormat(" {0:F0}% surprised,", es.Surprise * 100f);
+		
+		if(emotStr.Length > 0)
+		{
+			emotStr.Remove(0, 1);
+			emotStr.Remove(emotStr.Length - 1, 1);
+		}
+		
+		return emotStr.ToString();
+	}
+	
+	
+	/// <summary>
+	/// Gets the emotion scores as list of strings.
+	/// </summary>
+	/// <returns>The emotion as string.</returns>
+	/// <param name="emotion">Emotion.</param>
+	public static List<string> GetEmotionScoresList(Emotion emotion)
+	{
+		List<string> alScores = new List<string>();
+		if(emotion == null || emotion.Scores == null)
+			return alScores;
+		
+		Scores es = emotion.Scores; 
+		
+		if(es.Anger >= 0.01f) alScores.Add(string.Format("{0:F0}% angry", es.Anger * 100f));
+		if(es.Contempt >= 0.01f) alScores.Add(string.Format("{0:F0}% contemptuous", es.Contempt * 100f));
+		if(es.Disgust >= 0.01f) alScores.Add(string.Format("{0:F0}% disgusted,", es.Disgust * 100f));
+		if(es.Fear >= 0.01f) alScores.Add(string.Format("{0:F0}% scared", es.Fear * 100f));
+		if(es.Happiness >= 0.01f) alScores.Add(string.Format("{0:F0}% happy", es.Happiness * 100f));
+		if(es.Neutral >= 0.01f) alScores.Add(string.Format("{0:F0}% neutral", es.Neutral * 100f));
+		if(es.Sadness >= 0.01f) alScores.Add(string.Format("{0:F0}% sad", es.Sadness * 100f));
+		if(es.Surprise >= 0.01f) alScores.Add(string.Format("{0:F0}% surprised", es.Surprise * 100f));
+		
+		return alScores;
+	}
+
+
+	/// <summary>
+	/// Gets the standard face colors.
+	/// </summary>
+	/// <returns>The face colors.</returns>
+	public static Color[] GetFaceColors()
+	{
+		Color[] faceColors = new Color[5];
+
+		faceColors[0] = Color.green;
+		faceColors[1] = Color.yellow;
+		faceColors[2] = Color.cyan;
+		faceColors[3] = Color.magenta;
+		faceColors[4] = Color.red;
+
+		return faceColors;
+	}
+
+
+	/// <summary>
+	/// Gets the standard face color names.
+	/// </summary>
+	/// <returns>The face color names.</returns>
+	public static string[] GetFaceColorNames()
+	{
+		string[] faceColorNames = new string[5];
+
+		faceColorNames[0] = "Green";
+		faceColorNames[1] = "Yellow";
+		faceColorNames[2] = "Cyan";
+		faceColorNames[3] = "Magenta";
+		faceColorNames[4] = "Red";
+
+		return faceColorNames;
+	}
+	
+	
 	// draw face rectangles
 	/// <summary>
 	/// Draws the face rectacgles in the given texture.
 	/// </summary>
 	/// <param name="faces">List of faces.</param>
 	/// <param name="tex">Tex.</param>
-	public void DrawFaceRects(Texture2D tex, Face[] faces, Color[] faceColors)
+	public static void DrawFaceRects(Texture2D tex, Face[] faces, Color[] faceColors)
 	{
 		for(int i = 0; i < faces.Length; i++)
 		{
@@ -139,7 +332,7 @@ public class FaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}", ServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}", FaceServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -159,6 +352,40 @@ public class FaceManager : MonoBehaviour
 	
 
 	/// <summary>
+	/// Gets the person group.
+	/// </summary>
+	/// <returns>The person group.</returns>
+	/// <param name="groupId">Group ID.</param>
+	public PersonGroup GetPersonGroup(string groupId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}", FaceServiceHost, groupId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+		
+		PersonGroup group = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			group = JsonConvert.DeserializeObject<PersonGroup>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+		
+		return group;
+	}
+	
+	
+	/// <summary>
 	/// Lists the people in a person-group.
 	/// </summary>
 	/// <returns>The people in group.</returns>
@@ -170,7 +397,7 @@ public class FaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons", ServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", FaceServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -206,7 +433,7 @@ public class FaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons", ServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", FaceServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -221,7 +448,7 @@ public class FaceManager : MonoBehaviour
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
 
-			if(person.PersonId != null)
+			//if(person.PersonId != null)
 			{
 				person.Name = personName;
 				person.UserData = userData;
@@ -236,6 +463,41 @@ public class FaceManager : MonoBehaviour
 	}
 	
 
+	/// <summary>
+	/// Gets the person data.
+	/// </summary>
+	/// <returns>The person data.</returns>
+	/// <param name="groupId">Group ID.</param>
+	/// <param name="personId">Person ID.</param>
+	public Person GetPerson(string groupId, string personId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, personId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+		
+		Person person = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+		
+		return person;
+	}
+	
+	
 	/// <summary>
 	/// Adds the face to a person in a person-group.
 	/// </summary>
@@ -272,7 +534,7 @@ public class FaceManager : MonoBehaviour
 		}
 
 		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.Left, faceRect.Top, faceRect.Width, faceRect.Height) : string.Empty;
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", ServiceHost, groupId, personId, userData, sFaceRect);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", FaceServiceHost, groupId, personId, userData, sFaceRect);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -306,7 +568,7 @@ public class FaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/train", ServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/train", FaceServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -335,7 +597,7 @@ public class FaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/training", ServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/training", FaceServiceHost, groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -358,9 +620,102 @@ public class FaceManager : MonoBehaviour
 		return bSuccess;
 	}
 	
+
+	/// <summary>
+	/// Identifies the given faces.
+	/// </summary>
+	/// <returns>Array of identification results.</returns>
+	/// <param name="groupId">Group ID.</param>
+	/// <param name="faces">Array of detected faces.</param>
+	/// <param name="maxCandidates">Maximum allowed candidates pro face.</param>
+	public IdentifyResult[] IdentifyFaces(string groupId, ref Face[] faces, int maxCandidates)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+
+		Guid[] faceIds = new Guid[faces.Length];
+		for(int i = 0; i < faces.Length; i++)
+		{
+			faceIds[i] = faces[i].FaceId;
+		}
+
+		if(maxCandidates <= 0)
+		{
+			maxCandidates = 1;
+		}
+		
+		string requestUrl = string.Format("{0}/identify", FaceServiceHost);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		string sJsonContent = JsonConvert.SerializeObject(new { personGroupId = groupId, faceIds = faceIds, maxNumOfCandidatesReturned = maxCandidates }, jsonSettings);
+		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
+		
+		IdentifyResult[] results = null;
+		if(!WebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			results = JsonConvert.DeserializeObject<IdentifyResult[]>(reader.ReadToEnd(), jsonSettings);
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
+		
+		return results;
+	}
 	
 
+	/// <summary>
+	/// Matchs the identity candidates to faces.
+	/// </summary>
+	/// <returns>The number of matched identities.</returns>
+	/// <param name="faces">Array of detected faces.</param>
+	/// <param name="identities">Array of recognized identities.</param>
+	public int MatchCandidatesToFaces(ref Face[] faces, ref IdentifyResult[] identities, string groupId)
+	{
+		int matched = 0;
+		if(faces == null || identities == null)
+			return matched;
 
+		// clear face identities
+		for(int i = 0; i < faces.Length; i++)
+		{
+			faces[i].Candidate = null;
+		}
+
+		foreach(IdentifyResult ident in identities)
+		{
+			Guid faceId = ident.FaceId;
+			
+			for(int i = 0; i < faces.Length; i++)
+			{
+				if(faces[i].FaceId == faceId)
+				{
+					if(ident.Candidates != null && ident.Candidates.Length > 0)
+					{
+						faces[i].Candidate = ident.Candidates[0];
+
+						if(faces[i].Candidate != null)
+						{
+							faces[i].Candidate.Person = GetPerson(groupId, faces[i].Candidate.PersonId.ToString());
+						}
+					}
+
+					matched++;
+					break;
+				}
+			}
+		}
+		
+		return matched;
+	}
+	
+	
 	// --------------------------------------------------------------------------------- //
 	
 	// processes the error status in response
@@ -372,8 +727,7 @@ public class FaceManager : MonoBehaviour
 		ClientError ex = JsonConvert.DeserializeObject<ClientError>(responseText);
 		if (ex.error != null && ex.error.code != null)
 		{
-			string sErrorMsg = !string.IsNullOrEmpty(ex.error.code) && ex.error.code != "Unspecified" ?
-				ex.error.code + " - " + ex.error.message : ex.error.message;
+			string sErrorMsg = !string.IsNullOrEmpty(ex.error.message) ? ex.error.message : ex.error.code;
 			throw new System.Exception(sErrorMsg);
 		}
 		else

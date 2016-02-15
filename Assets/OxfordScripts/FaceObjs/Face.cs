@@ -53,4 +53,24 @@ public class Face
         get;
         set;
     }
+
+	/// <summary>
+	/// Gets or sets the emotion.
+	/// </summary>
+	/// <value>The emotion.</value>
+	public Emotion Emotion
+	{
+		get;
+		set;
+	}
+
+	/// <summary>
+	/// Gets or sets the identified candidate.
+	/// </summary>
+	/// <value>The identified candidate.</value>
+	public Candidate Candidate
+	{
+		get;
+		set;
+	}
 }
