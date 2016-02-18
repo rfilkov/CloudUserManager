@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Text;
 
 public class GuiWebcam : MonoBehaviour 
 {
@@ -44,6 +45,17 @@ public class GuiWebcam : MonoBehaviour
 
 		if(devices != null && devices.Length > 0)
 		{
+			// print available webcams
+			StringBuilder sbWebcams = new StringBuilder();
+			sbWebcams.Append("Available webcams:").AppendLine();
+			
+			foreach(WebCamDevice device in devices)
+			{
+				sbWebcams.Append(device.name).AppendLine();
+			}
+			
+			Debug.Log(sbWebcams.ToString());
+			
 			if(string.IsNullOrEmpty(webcamName))
 			{
 				webcamName = devices[0].name;
@@ -75,7 +87,8 @@ public class GuiWebcam : MonoBehaviour
 		if(!bTexResolutionSet && webcamTex != null && webcamTex.isPlaying)
 		{
 			Vector3 localScale = transform.localScale;
-			localScale.x = (float)webcamTex.height / (float)webcamTex.width * Mathf.Sign(localScale.x);
+			localScale.x = (float)webcamTex.width * Screen.height / ((float)webcamTex.height * Screen.width)
+				* Mathf.Sign(localScale.x);
 			transform.localScale = localScale;
 
 			bTexResolutionSet = true;

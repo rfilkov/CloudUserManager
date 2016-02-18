@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Text;
 
 public class WebcamSource : MonoBehaviour 
 {
@@ -41,10 +42,26 @@ public class WebcamSource : MonoBehaviour
 	void Start () 
 	{
 		WebCamDevice[] devices = WebCamTexture.devices;
-
+		
 		if(devices != null && devices.Length > 0)
 		{
-			webcamName = devices[0].name;
+			// print available webcams
+			StringBuilder sbWebcams = new StringBuilder();
+			sbWebcams.Append("Available webcams:").AppendLine();
+			
+			foreach(WebCamDevice device in devices)
+			{
+				sbWebcams.Append(device.name).AppendLine();
+			}
+			
+			Debug.Log(sbWebcams.ToString());
+			
+			if(string.IsNullOrEmpty(webcamName))
+			{
+				webcamName = devices[0].name;
+			}
+
+			// create webcam tex
 			webcamTex = new WebCamTexture(webcamName);
 			
 			GetComponent<Renderer>().material.mainTexture = webcamTex;

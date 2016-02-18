@@ -28,10 +28,14 @@ public class UserRecognizer : MonoBehaviour
 	// array of identification results
 	private IdentifyResult[] results = null;
 
+	// GUI background texture
+	private Texture2D guiTexBack = null;
+
 	// GUI scroll variable for the results' list
 	private Vector2 scroll;
 	// selected user face
 	private int selected = 0;
+
 	// new user name
 	private string userName = string.Empty;
 
@@ -41,6 +45,21 @@ public class UserRecognizer : MonoBehaviour
 		// init face colors
 		faceColors = FaceManager.GetFaceColors();
 		faceColorNames = FaceManager.GetFaceColorNames();
+
+		// initialize gui backfround tex
+		guiTexBack = new Texture2D(64, 64, TextureFormat.ARGB32, false);
+		Color backColor = (Color)new Color32(32, 32, 32, 220);
+		
+		for (int y = 0; y < guiTexBack.height; ++y)
+		{
+			for (int x = 0; x < guiTexBack.width; ++x)
+			{
+				guiTexBack.SetPixel(x, y, backColor);
+			}
+		}
+		
+		guiTexBack.Apply();
+		
 	}
 
 
@@ -80,7 +99,12 @@ public class UserRecognizer : MonoBehaviour
 		if(state == 1)
 		{
 			Rect guiResultRect = new Rect(Screen.width - 180, 0, 170, Screen.height);
-			GUILayout.BeginArea(guiResultRect);
+
+			GUIStyle guiStyle = new GUIStyle();
+			guiStyle.normal.background = guiTexBack;
+
+			GUILayout.BeginArea(guiResultRect, guiStyle);
+
 			scroll = GUILayout.BeginScrollView(scroll);
 			GUILayout.BeginVertical();
 
@@ -123,9 +147,12 @@ public class UserRecognizer : MonoBehaviour
 					GUILayout.Label("-");
 				}
 
+				// horizontal line
+				GUILayout.Box(string.Empty, new GUILayoutOption[]{GUILayout.ExpandWidth(true), GUILayout.Height(1)});
+				
 				if(alNewFaceNames.Count > 0)
 				{
-					GUILayout.Label("New user:", labelStyle);
+					GUILayout.Label("Add new user:", labelStyle);
 					selected = GUILayout.SelectionGrid(selected, alNewFaceNames.ToArray (), 1);
 					
 					GUILayout.Label("As user name:", labelStyle);
@@ -187,7 +214,8 @@ public class UserRecognizer : MonoBehaviour
 			cameraShot.gameObject.SetActive(true);
 			
 			Vector3 localScale = cameraShot.transform.localScale;
-			localScale.x = (float)tex.height / (float)tex.width * Mathf.Sign(localScale.x);
+			localScale.x = (float)tex.width * Screen.height / ((float)tex.height * Screen.width)
+				* Mathf.Sign(localScale.x);
 			cameraShot.transform.localScale = localScale;
 			
 			return true;
@@ -219,7 +247,8 @@ public class UserRecognizer : MonoBehaviour
 				cameraShot.gameObject.SetActive(true);
 				
 				Vector3 localScale = cameraShot.transform.localScale;
-				localScale.x = (float)tex.height / (float)tex.width * Mathf.Sign(localScale.x);
+				localScale.x = (float)tex.width * Screen.height / ((float)tex.height * Screen.width)
+					* Mathf.Sign(localScale.x);
 				cameraShot.transform.localScale = localScale;
 				
 				return true;
