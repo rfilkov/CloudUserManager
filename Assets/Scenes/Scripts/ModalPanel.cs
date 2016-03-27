@@ -23,10 +23,21 @@ public class ModalPanel : MonoBehaviour {
         return modalPanel;
     }
 
-    public void Show(string message = null, UnityAction abortEvent = null)
+    public void ShowProgress(string message = null, UnityAction abortEvent = null)
+    {
+        Show("Abort", message, abortEvent);
+    }
+
+    public void ShowMessage(string message, UnityAction closeEvent = null)
+    {
+        Show("Close", message, closeEvent);
+    }
+
+    private void Show(string buttonLabel, string message = null, UnityAction abortEvent = null)
     {
         modalPanelObject.SetActive(true);
 
+        abortButton.GetComponentInChildren<Text>().text = buttonLabel;
         abortButton.onClick.RemoveAllListeners();
         abortButton.onClick.AddListener(Hide);
         if (abortEvent != null)

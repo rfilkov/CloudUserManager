@@ -14,6 +14,9 @@ public class PersonsManager : MonoBehaviour {
     private RectTransform personsListContent;
     private ModalPanel modalPanel;
     private GameObject personPanelPrefab;
+    private List<Person> persons;
+    private Person selectedPerson;
+    private Dictionary<Guid, GameObject> personsPanels = new Dictionary<Guid, GameObject>();
 
     void Awake()
     {
@@ -26,7 +29,7 @@ public class PersonsManager : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        StartCoroutine(LoadingPersons());
+        StartCoroutine(LoadPersons());
     }
 
     public void OnAddNewPerson()
@@ -37,21 +40,57 @@ public class PersonsManager : MonoBehaviour {
     public void OnCancelPerson()
     {        
         HidePersonDetails();
+        selectedPerson = null;
     }
 
     public void OnSavePerson()
     {
-        HidePersonDetails();
+        string personName = PersonNameInputValue;
+
+        if(personName.Trim().Length == 0)
+        {
+            modalPanel.ShowMessage("Please enter a name!");
+            return;
+        }
+
+        if (selectedPerson != null)
+        {
+            StartCoroutine(UpdatePerson(selectedPerson.PersonId, personName));
+
+            selectedPerson = null;
+        }
+        else
+        {
+            StartCoroutine(CreatePerson(personName));
+        }
     }
 
     public void OnDeletePerson()
     {
+        if (selectedPerson != null)
+        {
+            StartCoroutine(DeletePerson(selectedPerson.PersonId));
 
+            selectedPerson = null;
+        }
     }
 
-    private IEnumerator LoadingPersons()
+    public void OnReloadPersons()
     {
-        modalPanel.Show("Loading Players, Please Wait ...");
+        StartCoroutine(LoadPersons());
+    }
+
+    private IEnumerator LoadPersons()
+    {
+        modalPanel.ShowProgress("Loading Players, Please Wait ...");
+
+        // Clear persons from the list
+        if(persons != null) persons.Clear();
+        foreach(GameObject panel in personsPanels.Values)
+        {
+            DestroyPersonPanel(panel);
+        }
+        personsPanels.Clear();
 
         AsyncTask<List<Person>> task = new AsyncTask<List<Person>>(() =>
         {
@@ -63,9 +102,9 @@ public class PersonsManager : MonoBehaviour {
 
                 return new List<Person>()
                 {
-                    new Person { Name = "Andy Murray" },
-                    new Person { Name = "Roger Federer" },
-                    new Person { Name = "Novak Djokovic" },
+                    new Person { Name = "Andy Murray", PersonId = Guid.NewGuid() },
+                    new Person { Name = "Roger Federer", PersonId = Guid.NewGuid() },
+                    new Person { Name = "Novak Djokovic", PersonId = Guid.NewGuid() },
                 };
             }
             catch (Exception ex)
@@ -84,16 +123,176 @@ public class PersonsManager : MonoBehaviour {
 
         modalPanel.Hide();
 
+        persons = task.Result;
 
-        personsListContent.sizeDelta = new Vector2(personsListContent.sizeDelta.x, personsListContent.sizeDelta.y * task.Result.Count);
-
-        foreach (Person p in task.Result)
+        foreach (Person p in persons)
         {
-            GameObject personPanelInstance = Instantiate<GameObject>(personPanelPrefab);
-            Text personName = personPanelInstance.GetComponentInChildren<Text>();
-            personName.text = p.Name;
-            personPanelInstance.transform.SetParent(personsListContent, false);
-            AddPersonPanelClickListener(personPanelInstance, p);
+            InstantiatePersonPanel(p);
+        }
+
+        yield return null;
+    }
+
+    private void InstantiatePersonPanel(Person p)
+    {
+        GameObject personPanelInstance = Instantiate<GameObject>(personPanelPrefab);
+        Text personName = personPanelInstance.GetComponentInChildren<Text>();
+        personName.text = p.Name;
+        personPanelInstance.transform.SetParent(personsListContent, false);
+        AddPersonPanelClickListener(personPanelInstance, p);
+        personsPanels.Add(p.PersonId, personPanelInstance);
+    }
+
+    private void DestroyPersonPanel(GameObject panel)
+    {
+        panel.transform.SetParent(null, false);
+        Destroy(panel);
+    }
+
+    private IEnumerator UpdatePerson(Guid id, string name)
+    {
+        modalPanel.ShowProgress("Saving data, Please Wait ...");
+
+        AsyncTask<bool> task = new AsyncTask<bool>(() =>
+        {
+            try
+            {
+                // update data in the cloud
+
+                Thread.Sleep(2000);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Failed to process task: " + ex.Message);
+                return false;
+            }
+        });
+
+        task.Start();
+
+        yield return null;
+
+        while (task.State == TaskState.Running)
+            yield return null;
+
+        modalPanel.Hide();
+
+        if (!task.Result)
+        {
+            modalPanel.ShowMessage("Error saving data!");
+        }
+        else {
+            HidePersonDetails();
+
+            Person p = persons.Find(x => x.PersonId == id);
+            if (p != null)
+            {
+                p.Name = name;
+                GameObject personPanelInstance = personsPanels[p.PersonId];
+                Text personName = personPanelInstance.GetComponentInChildren<Text>();
+                personName.text = name;
+            }
+        }  
+
+        yield return null;
+    }
+
+    private IEnumerator CreatePerson(string name)
+    {
+        modalPanel.ShowProgress("Saving data, Please Wait ...");
+
+        AsyncTask<bool> task = new AsyncTask<bool>(() =>
+        {
+            try
+            {
+                // update data in the cloud
+
+                Thread.Sleep(2000);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Failed to process task: " + ex.Message);
+                return false;
+            }
+        });
+
+        task.Start();
+
+        yield return null;
+
+        while (task.State == TaskState.Running)
+            yield return null;
+
+        modalPanel.Hide();
+
+        if (!task.Result)
+        {
+            modalPanel.ShowMessage("Error saving data!");
+        }
+        else {
+            HidePersonDetails();
+
+            Person p = new Person { Name = name, PersonId = Guid.NewGuid() };
+            persons.Add(p);
+
+            InstantiatePersonPanel(p);
+        }
+
+        yield return null;
+    }
+
+    private IEnumerator DeletePerson(Guid id)
+    {
+        //TO DO: Ask first ... 
+
+        modalPanel.ShowProgress("Deleting player, Please Wait ...");
+
+        AsyncTask<bool> task = new AsyncTask<bool>(() =>
+        {
+            try
+            {
+                // update data in the cloud
+
+                Thread.Sleep(2000);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Failed to process task: " + ex.Message);
+                return false;
+            }
+        });
+
+        task.Start();
+
+        yield return null;
+
+        while (task.State == TaskState.Running)
+            yield return null;
+
+        modalPanel.Hide();
+
+        if (!task.Result)
+        {
+            modalPanel.ShowMessage("Error deleting player!");
+        }
+        else {
+            HidePersonDetails();
+
+            Person p = persons.Find(x => x.PersonId == id);
+            if (p != null)
+            {
+                persons.Remove(p);
+                
+                GameObject personPanelInstance = personsPanels[p.PersonId];
+                DestroyPersonPanel(personPanelInstance);
+                personsPanels.Remove(p.PersonId);
+            }
         }
 
         yield return null;
@@ -101,8 +300,21 @@ public class PersonsManager : MonoBehaviour {
 
     private void LoadPersonDetails(Person p)
     {
-        InputField personName = personDetailsPanel.GetComponentInChildren<InputField>();
-        personName.text = p != null ? p.Name : "";
+        PersonNameInputValue = p != null ? p.Name : "";
+    }
+
+    private string PersonNameInputValue
+    {
+        get
+        {
+            InputField personName = personDetailsPanel.GetComponentInChildren<InputField>();
+            return personName.text;
+        }
+        set
+        {
+            InputField personName = personDetailsPanel.GetComponentInChildren<InputField>();
+            personName.text = value;
+        }
     }
 
     private void AddPersonPanelClickListener(GameObject panel, Person p)
@@ -116,6 +328,7 @@ public class PersonsManager : MonoBehaviour {
 
     private void OnPersonClick(Person p)
     {
+        selectedPerson = p;
         ShowPersonDetail();
         LoadPersonDetails(p);
     }
@@ -133,6 +346,6 @@ public class PersonsManager : MonoBehaviour {
     {
         LoadPersonDetails(null);
         personDetailsPanel.SetActive(false);
-        personsListPanel.SetActive(true);
+        personsListPanel.SetActive(true);        
     }
 }
