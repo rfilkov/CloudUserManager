@@ -21,7 +21,7 @@ public class PersonsManager : MonoBehaviour {
     void Awake()
     {
         modalPanel = ModalPanel.Instance();
-        personPanelPrefab = Resources.LoadAssetAtPath<GameObject>("Assets/Scenes/Prefabs/PersonListItem.prefab");
+        personPanelPrefab = Resources.LoadAssetAtPath<GameObject>("Assets/GroupManagement/Prefabs/PersonListItem.prefab");
 
         personsListContent = personsListPanel.FindComponentInChildWithTag<RectTransform>("ListViewContent");
     }
