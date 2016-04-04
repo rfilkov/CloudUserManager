@@ -55,8 +55,7 @@ public class PersonsManager : MonoBehaviour {
 
         if (selectedPerson != null)
         {
-            StartCoroutine(UpdatePerson(selectedPerson.PersonId, personName));
-
+            StartCoroutine(UpdatePerson(selectedPerson, personName));
             selectedPerson = null;
         }
         else
@@ -69,7 +68,7 @@ public class PersonsManager : MonoBehaviour {
     {
         if (selectedPerson != null)
         {
-            StartCoroutine(DeletePerson(selectedPerson.PersonId));
+            StartCoroutine(DeletePerson(selectedPerson));
 
             selectedPerson = null;
         }
@@ -90,6 +89,7 @@ public class PersonsManager : MonoBehaviour {
         {
             DestroyPersonPanel(panel);
         }
+
         personsPanels.Clear();
 
         AsyncTask<List<Person>> task = new AsyncTask<List<Person>>(() =>
@@ -97,38 +97,61 @@ public class PersonsManager : MonoBehaviour {
             try
             {
                 //Load Persons here
+				UserGroupManager groupMgr = UserGroupManager.Instance;
 
-                Thread.Sleep(3000);
+				// wait for the group manager to start
+				int waitPeriods = 10;
+				while(groupMgr == null && waitPeriods > 0)
+				{
+					Thread.Sleep(500);
+					waitPeriods--;
 
-                return new List<Person>()
-                {
-                    new Person { Name = "Andy Murray", PersonId = Guid.NewGuid() },
-                    new Person { Name = "Roger Federer", PersonId = Guid.NewGuid() },
-                    new Person { Name = "Novak Djokovic", PersonId = Guid.NewGuid() },
-                };
+					groupMgr = UserGroupManager.Instance;
+				}
+
+				if(groupMgr != null)
+				{
+					return groupMgr.GetUsersList();
+				}
+
+				return null;
+
+//                Thread.Sleep(3000);
+//
+//                return new List<Person>()
+//                {
+//                    new Person { Name = "Andy Murray", PersonId = Guid.NewGuid() },
+//                    new Person { Name = "Roger Federer", PersonId = Guid.NewGuid() },
+//                    new Person { Name = "Novak Djokovic", PersonId = Guid.NewGuid() },
+//                };
             }
             catch (Exception ex)
             {
                 Debug.LogError("Failed to process task: " + ex.Message);
-                return new List<Person>();
+                return null;
             }
         });
 
         task.Start();
-
         yield return null;
 
         while (task.State == TaskState.Running)
             yield return null;
 
         modalPanel.Hide();
-
         persons = task.Result;
 
-        foreach (Person p in persons)
-        {
-            InstantiatePersonPanel(p);
-        }
+		if(persons != null)
+		{
+			foreach (Person p in persons)
+			{
+				InstantiatePersonPanel(p);
+			}
+		}
+		else
+		{
+			Debug.LogError("Error loading persons.");
+		}
 
         yield return null;
     }
@@ -136,8 +159,15 @@ public class PersonsManager : MonoBehaviour {
     private void InstantiatePersonPanel(Person p)
     {
         GameObject personPanelInstance = Instantiate<GameObject>(personPanelPrefab);
-        Text personName = personPanelInstance.GetComponentInChildren<Text>();
-        personName.text = p.Name;
+
+		GameObject personNameObj = personPanelInstance.transform.Find("PersonName").gameObject;
+		Text personNameTxt = personNameObj.GetComponent<Text>(); // personPanelInstance.GetComponentInChildren<Text>();
+		personNameTxt.text = p.Name;
+
+		GameObject personGroupObj = personPanelInstance.transform.Find("PersonGroup").gameObject;
+		Text personGroupTxt = personGroupObj.GetComponent<Text>();
+		personGroupTxt.text = "ID: " + p.PersonId.ToString();
+
         personPanelInstance.transform.SetParent(personsListContent, false);
         AddPersonPanelClickListener(personPanelInstance, p);
         personsPanels.Add(p.PersonId, personPanelInstance);
@@ -149,7 +179,7 @@ public class PersonsManager : MonoBehaviour {
         Destroy(panel);
     }
 
-    private IEnumerator UpdatePerson(Guid id, string name)
+    private IEnumerator UpdatePerson(Person p, string name)
     {
         modalPanel.ShowProgress("Saving data, Please Wait ...");
 
@@ -158,10 +188,19 @@ public class PersonsManager : MonoBehaviour {
             try
             {
                 // update data in the cloud
+				UserGroupManager groupMgr = UserGroupManager.Instance;
 
-                Thread.Sleep(2000);
+				if(groupMgr != null && p != null)
+				{
+					p.Name = name;
+					groupMgr.UpdateUserData(p);
 
-                return true;
+					return true;
+				}
+
+                //Thread.Sleep(2000);
+
+                return false;
             }
             catch (Exception ex)
             {
@@ -171,7 +210,6 @@ public class PersonsManager : MonoBehaviour {
         });
 
         task.Start();
-
         yield return null;
 
         while (task.State == TaskState.Running)
@@ -186,10 +224,10 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            Person p = persons.Find(x => x.PersonId == id);
+            //Person p = persons.Find(x => x.PersonId == id);
             if (p != null)
             {
-                p.Name = name;
+                //p.Name = name;
                 GameObject personPanelInstance = personsPanels[p.PersonId];
                 Text personName = personPanelInstance.GetComponentInChildren<Text>();
                 personName.text = name;
@@ -202,16 +240,24 @@ public class PersonsManager : MonoBehaviour {
     private IEnumerator CreatePerson(string name)
     {
         modalPanel.ShowProgress("Saving data, Please Wait ...");
+		Person p = null;
 
         AsyncTask<bool> task = new AsyncTask<bool>(() =>
         {
             try
             {
                 // update data in the cloud
+				UserGroupManager groupMgr = UserGroupManager.Instance;
 
-                Thread.Sleep(2000);
+				if(groupMgr != null && persons != null)
+				{
+					p = groupMgr.AddUserToGroup(name, string.Empty);
+					return true;
+				}
+				
+                //Thread.Sleep(2000);
 
-                return true;
+                return false;
             }
             catch (Exception ex)
             {
@@ -221,7 +267,6 @@ public class PersonsManager : MonoBehaviour {
         });
 
         task.Start();
-
         yield return null;
 
         while (task.State == TaskState.Running)
@@ -236,16 +281,18 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            Person p = new Person { Name = name, PersonId = Guid.NewGuid() };
-            persons.Add(p);
-
-            InstantiatePersonPanel(p);
+            //Person p = new Person { Name = name, PersonId = Guid.NewGuid() };
+			if(p != null)
+			{
+            	persons.Add(p);
+				InstantiatePersonPanel(p);
+			}
         }
 
         yield return null;
     }
 
-    private IEnumerator DeletePerson(Guid id)
+    private IEnumerator DeletePerson(Person p)
     {
         //TO DO: Ask first ... 
 
@@ -256,10 +303,17 @@ public class PersonsManager : MonoBehaviour {
             try
             {
                 // update data in the cloud
+				UserGroupManager groupMgr = UserGroupManager.Instance;
+				
+				if(groupMgr != null && p != null && persons != null)
+				{
+					groupMgr.DeleteUser(p);
+					return true;
+				}
+				
+                //Thread.Sleep(2000);
 
-                Thread.Sleep(2000);
-
-                return true;
+                return false;
             }
             catch (Exception ex)
             {
@@ -269,7 +323,6 @@ public class PersonsManager : MonoBehaviour {
         });
 
         task.Start();
-
         yield return null;
 
         while (task.State == TaskState.Running)
@@ -284,7 +337,7 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            Person p = persons.Find(x => x.PersonId == id);
+            //Person p = persons.Find(x => x.PersonId == id);
             if (p != null)
             {
                 persons.Remove(p);

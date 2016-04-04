@@ -557,6 +557,63 @@ public class FaceManager : MonoBehaviour
 
 
 	/// <summary>
+	/// Updates the person's name or userData field.
+	/// </summary>
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="personId">Person ID.</param>
+	public void UpdatePersonData(string groupId, Person person)
+	{
+		if(person == null)
+			return;
+
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, person.PersonId.ToString());
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		string sJsonContent = JsonConvert.SerializeObject(new { name = person.Name, userData = person.UserData }, jsonSettings);
+		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "PATCH", "application/json", btContent, headers, true, false);
+		
+		if(WebTools.IsErrorStatus(response))
+		{
+			ProcessFaceError(response);
+		}
+	}
+	
+	
+	/// <summary>
+	/// Deletes existing person from a person group. Persisted face images of the person will also be deleted. 
+	/// </summary>
+	/// <param name="groupId">Person-group ID.</param>
+	/// <param name="personId">Person ID.</param>
+	public void DeletePerson(string groupId, string personId)
+	{
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
+		
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, personId);
+		
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		
+		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "DELETE", "application/json", null, headers, true, false);
+		
+		if(WebTools.IsErrorStatus(response))
+		{
+			ProcessFaceError(response);
+		}
+	}
+	
+	
+	/// <summary>
 	/// Trains the person-group.
 	/// </summary>
 	/// <returns><c>true</c>, if person-group training was successfully started, <c>false</c> otherwise.</returns>

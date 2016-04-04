@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using System;
 
 public class UserGroupManager : MonoBehaviour 
@@ -143,6 +144,31 @@ public class UserGroupManager : MonoBehaviour
 
 
 	/// <summary>
+	/// Gets the list of users in this group.
+	/// </summary>
+	/// <returns>The users list.</returns>
+	public List<Person> GetUsersList()
+	{
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return null;
+		
+		if(faceManager != null && !string.IsNullOrEmpty(userGroupId))
+		{
+			Person[] persons = faceManager.ListPersonsInGroup(userGroupId);
+			
+			if(persons != null)
+			{
+				return new List<Person>(persons);
+			}
+		}
+		
+		return null;
+	}
+
+
+	/// <summary>
 	/// Adds the user to group.
 	/// </summary>
 	/// <returns>User face ID.</returns>
@@ -155,9 +181,10 @@ public class UserGroupManager : MonoBehaviour
 		if(texImage == null)
 			return string.Empty;
 		
-		byte[] imageBytes = texImage.EncodeToJPG();
+		byte[] imageBytes = texImage != null ? texImage.EncodeToJPG() : null;
 		return AddUserToGroup(userName, userData, imageBytes, faceRect);
 	}
+
 
 	/// <summary>
 	/// Adds the user to group.
@@ -190,7 +217,11 @@ public class UserGroupManager : MonoBehaviour
 //					faceRect.Height += 20;
 //				}
 
-				PersonFace personFace = faceManager.AddFaceToPerson(userGroupId, person.PersonId.ToString (), string.Empty, faceRect, imageBytes);
+				PersonFace personFace = null;
+				if(imageBytes != null)
+				{
+					personFace = faceManager.AddFaceToPerson(userGroupId, person.PersonId.ToString (), string.Empty, faceRect, imageBytes);
+				}
 
 				if(personFace != null)
 				{
@@ -204,6 +235,114 @@ public class UserGroupManager : MonoBehaviour
 	}
 
 
+	/// <summary>
+	/// Adds the user to group.
+	/// </summary>
+	/// <returns>Person or null.</returns>
+	/// <param name="userName">User name.</param>
+	/// <param name="userData">User data.</param>
+	public Person AddUserToGroup(string userName, string userData)
+	{
+		// create the user-group if needed
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return null;
+
+		Person person = null;
+		if(faceManager != null)
+		{
+			// add person
+			person = faceManager.AddPersonToGroup(userGroupId, userName, userData);
+		}
+		
+		return person;
+	}
+
+
+	/// <summary>
+	/// Adds the face to user.
+	/// </summary>
+	/// <returns>User face ID.</returns>
+	/// <param name="person">Person.</param>
+	/// <param name="texImage">Image texture.</param>
+	/// <param name="faceRect">Face rectangle.</param>
+	public string AddFaceToUser(Person person, Texture2D texImage, FaceRectangle faceRect)
+	{
+		if(texImage == null)
+			return string.Empty;
+		
+		byte[] imageBytes = texImage != null ? texImage.EncodeToJPG() : null;
+		return AddFaceToUser(person, imageBytes, faceRect);
+	}
+
+
+	/// <summary>
+	/// Adds face to the user.
+	/// </summary>
+	/// <returns>User face ID.</returns>
+	/// <param name="person">Person.</param>
+	/// <param name="imageBytes">Image bytes.</param>
+	/// <param name="faceRect">Face rectangle.</param>
+	public string AddFaceToUser(Person person, byte[] imageBytes, FaceRectangle faceRect)
+	{
+		// create the user-group if needed
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return string.Empty;
+		
+		if(faceManager != null && person != null && imageBytes != null)
+		{
+			PersonFace personFace = faceManager.AddFaceToPerson(userGroupId, person.PersonId.ToString (), string.Empty, faceRect, imageBytes);
+
+			if(personFace != null)
+			{
+				faceManager.TrainPersonGroup(userGroupId);
+				return personFace.PersistedFaceId.ToString();
+			}
+		}
+		
+		return string.Empty;
+	}
+	
+	
+	/// <summary>
+	/// Updates the person's name or userData field.
+	/// </summary>
+	/// <param name="person">Person to be updated.</param>
+	public void UpdateUserData(Person person)
+	{
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return;
+		
+		if(faceManager != null && !string.IsNullOrEmpty(userGroupId) && person != null)
+		{
+			faceManager.UpdatePersonData(userGroupId, person);
+		}
+	}
+	
+	
+	/// <summary>
+	/// Deletes existing person from a person group. Persisted face images of the person will also be deleted. 
+	/// </summary>
+	/// <param name="person">Person to be deleted.</param>
+	public void DeleteUser(Person person)
+	{
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return;
+		
+		if(faceManager != null && !string.IsNullOrEmpty(userGroupId) && person != null)
+		{
+			faceManager.DeletePerson(userGroupId, person.PersonId.ToString());
+		}
+	}
+	
+	
 	// gets the person group info
 	private bool GetOrGreateUserGroup()
 	{
