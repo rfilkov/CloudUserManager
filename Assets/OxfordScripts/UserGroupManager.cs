@@ -60,9 +60,16 @@ public class UserGroupManager : MonoBehaviour
 			}
 			
 			faceManager = FaceManager.Instance;
-			if(faceManager == null || !faceManager.IsInitialized())
+			if(faceManager != null)
 			{
-				throw new Exception("FaceManager not found or not initialized.");
+				if(string.IsNullOrEmpty(faceManager.faceSubscriptionKey))
+				{
+					throw new Exception("Please set your face-subscription key.");
+				}
+			}
+			else
+			{
+				throw new Exception("FaceManager-component not found.");
 			}
 
 			// get the user group info

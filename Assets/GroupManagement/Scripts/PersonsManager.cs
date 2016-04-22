@@ -150,7 +150,7 @@ public class PersonsManager : MonoBehaviour {
 		}
 		else
 		{
-			Debug.LogError("Error loading persons.");
+			Debug.LogError("Error loading players' list. Check FaceManager- and UserGroupManager-components.");
 		}
 
         yield return null;

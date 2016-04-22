@@ -22,7 +22,7 @@ public class WebcamSource : MonoBehaviour
 	/// </summary>
 	public Texture2D GetSnapshot()
 	{
-		Texture2D snap = new Texture2D(webcamTex.width, webcamTex.height, TextureFormat.ARGB32, false);
+		Texture2D snap = new Texture2D(webcamTex ? webcamTex.width : 4, webcamTex ? webcamTex.height : 4, TextureFormat.ARGB32, false);
 
 		if(webcamTex)
 		{

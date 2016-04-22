@@ -33,7 +33,30 @@ public class FaceDetection : MonoBehaviour
 		faceColors = FaceManager.GetFaceColors();
 		faceColorNames = FaceManager.GetFaceColorNames();
 
-		SetHintText("Click on the camera image to make a shot");
+		bool bErrorFound = false;
+		if(FaceManager.Instance)
+		{
+			if(string.IsNullOrEmpty(FaceManager.Instance.faceSubscriptionKey))
+			{
+				SetHintText("Please set your face-subscription key.");
+				bErrorFound = true;
+			}
+			else if(recognizeEmotions && string.IsNullOrEmpty(FaceManager.Instance.emotionSubscriptionKey))
+			{
+				SetHintText("Please set your emotion-subscription key.");
+				bErrorFound = true;
+			}
+		}
+		else
+		{
+			SetHintText("FaceManager-component not found.");
+			bErrorFound = true;
+		}
+
+		if(!bErrorFound)
+		{
+			SetHintText("Click on the camera image to make a shot");
+		}
 	}
 	
 	void Update () 
