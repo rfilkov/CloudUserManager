@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System;
 using UnityEngine.EventSystems;
+using System.Linq;
 
 public class PersonsManager : MonoBehaviour {
 
@@ -46,8 +47,9 @@ public class PersonsManager : MonoBehaviour {
     public void OnSavePerson()
     {
         string personName = PersonNameInputValue;
+        string userData = PersonUserDataInputValue;
 
-        if(personName.Trim().Length == 0)
+        if (personName.Trim().Length == 0)
         {
             modalPanel.ShowMessage("Please enter a name!");
             return;
@@ -55,7 +57,7 @@ public class PersonsManager : MonoBehaviour {
 
         if (selectedPerson != null)
         {
-            StartCoroutine(UpdatePerson(selectedPerson, personName));
+            StartCoroutine(UpdatePerson(selectedPerson, personName, userData));
             selectedPerson = null;
         }
         else
@@ -164,9 +166,9 @@ public class PersonsManager : MonoBehaviour {
 		Text personNameTxt = personNameObj.GetComponent<Text>(); // personPanelInstance.GetComponentInChildren<Text>();
 		personNameTxt.text = p.Name;
 
-		GameObject personGroupObj = personPanelInstance.transform.Find("PersonGroup").gameObject;
-		Text personGroupTxt = personGroupObj.GetComponent<Text>();
-		personGroupTxt.text = "ID: " + p.PersonId.ToString();
+		GameObject personIDObj = personPanelInstance.transform.Find("PersonID").gameObject;
+		Text personIDTxt = personIDObj.GetComponent<Text>();
+		personIDTxt.text = "ID: " + p.PersonId.ToString();
 
         personPanelInstance.transform.SetParent(personsListContent, false);
         AddPersonPanelClickListener(personPanelInstance, p);
@@ -179,7 +181,7 @@ public class PersonsManager : MonoBehaviour {
         Destroy(panel);
     }
 
-    private IEnumerator UpdatePerson(Person p, string name)
+    private IEnumerator UpdatePerson(Person p, string name, string userData)
     {
         modalPanel.ShowProgress("Saving data, Please Wait ...");
 
@@ -193,6 +195,7 @@ public class PersonsManager : MonoBehaviour {
 				if(groupMgr != null && p != null)
 				{
 					p.Name = name;
+                    p.UserData = userData;
 					groupMgr.UpdateUserData(p);
 
 					return true;
@@ -354,20 +357,70 @@ public class PersonsManager : MonoBehaviour {
     private void LoadPersonDetails(Person p)
     {
         PersonNameInputValue = p != null ? p.Name : "";
+        PersonUserDataInputValue = p != null ? p.UserData : "";
+        PersonFaceIdText = p != null && p.PersistedFaceIds != null && p.PersistedFaceIds.Length > 0 ? p.PersistedFaceIds[0].ToString() : "No face ID";
+        PersonIdText = p != null && p.PersonId != Guid.Empty ? p.PersonId.ToString() : "";
     }
 
     private string PersonNameInputValue
     {
         get
         {
-            InputField personName = personDetailsPanel.GetComponentInChildren<InputField>();
-            return personName.text;
+            InputField personName = FindComponent<InputField>(personDetailsPanel, "InputFieldName");
+            if (personName)
+                return personName.text;
+            else
+                return "";
         }
         set
         {
-            InputField personName = personDetailsPanel.GetComponentInChildren<InputField>();
-            personName.text = value;
+            InputField personName = FindComponent<InputField>(personDetailsPanel, "InputFieldName"); ;
+            if(personName)
+                personName.text = value;
         }
+    }
+
+    private string PersonUserDataInputValue
+    {
+        get
+        {
+            InputField personUserData = FindComponent<InputField>(personDetailsPanel, "InputFieldUserData");
+            if (personUserData)
+                return personUserData.text;
+            else
+                return "";
+        }
+        set
+        {
+            InputField personUserData = FindComponent<InputField>(personDetailsPanel, "InputFieldUserData");
+            if (personUserData)
+                personUserData.text = value ?? "";
+        }
+    }
+
+    private string PersonFaceIdText
+    {
+        set
+        {
+            Text personFaceID = FindComponent<Text>(personDetailsPanel, "PersonFaceID");
+            if (personFaceID)
+                personFaceID.text = value ?? "";
+        }
+    }
+
+    private string PersonIdText
+    {
+        set
+        {
+            Text personID = FindComponent<Text>(personDetailsPanel, "TextPersonID");
+            if (personID)
+                personID.text = value ?? "";
+        }
+    }
+
+    private T FindComponent<T>(GameObject parent, string componentName) where T: UnityEngine.Object
+    {
+        return parent.GetComponentsInChildren<T>().FirstOrDefault(x => x.name == componentName);
     }
 
     private void AddPersonPanelClickListener(GameObject panel, Person p)
