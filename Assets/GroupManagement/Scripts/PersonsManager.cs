@@ -358,7 +358,7 @@ public class PersonsManager : MonoBehaviour {
     {
         PersonNameInputValue = p != null ? p.Name : "";
         PersonUserDataInputValue = p != null ? p.UserData : "";
-        PersonFaceIdText = p != null && p.PersistedFaceIds != null && p.PersistedFaceIds.Length > 0 ? p.PersistedFaceIds[0].ToString() : "No face ID";
+        PersonFaceIdText = p != null && p.PersistedFaceIds != null && p.PersistedFaceIds.Length > 0 ? ("FaceID: " + p.PersistedFaceIds[0].ToString()) : "No Face ID";
         PersonIdText = p != null && p.PersonId != Guid.Empty ? p.PersonId.ToString() : "";
     }
 

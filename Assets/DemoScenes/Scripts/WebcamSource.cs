@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Text;
 
-public class WebcamSource : MonoBehaviour 
+public class WebcamSource : MonoBehaviour, ImageSourceInterface
 {
 	[Tooltip("Whether the web-camera output needs to be flipped horizontally or not.")]
 	public bool flipHorizontally = false;
@@ -18,9 +18,9 @@ public class WebcamSource : MonoBehaviour
 
 
 	/// <summary>
-	/// Gets webcam snapshot.
+	/// Gets webcam image.
 	/// </summary>
-	public Texture2D GetSnapshot()
+	public Texture2D GetImage()
 	{
 		Texture2D snap = new Texture2D(webcamTex ? webcamTex.width : 4, webcamTex ? webcamTex.height : 4, TextureFormat.ARGB32, false);
 
@@ -39,6 +39,16 @@ public class WebcamSource : MonoBehaviour
 	}
 	
 
+	/// <summary>
+	/// Gets the transform.
+	/// </summary>
+	/// <returns>The transform.</returns>
+	public Transform GetTransform()
+	{
+		return transform;
+	}
+	
+	
 	void Start () 
 	{
 		WebCamDevice[] devices = WebCamTexture.devices;

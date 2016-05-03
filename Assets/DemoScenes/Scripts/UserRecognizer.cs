@@ -6,8 +6,8 @@ using System;
 
 public class UserRecognizer : MonoBehaviour 
 {
-	[Tooltip("WebCam source used for camera shots.")]
-	public GuiWebcam webcamSource;
+	[Tooltip("Image source used for getting face images.")]
+	public ImageSourceInterface imageSource;
 	
 	[Tooltip("Game object used for camera shot rendering.")]
 	public GUITexture cameraShot;
@@ -42,6 +42,19 @@ public class UserRecognizer : MonoBehaviour
 
 	void Start()
 	{
+		// get the first image source among mono behaviors
+		MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
+		
+		foreach(MonoBehaviour monoScript in monoScripts)
+		{
+			if(typeof(ImageSourceInterface).IsAssignableFrom(monoScript.GetType()) &&
+			   monoScript.enabled)
+			{
+				imageSource = (ImageSourceInterface)monoScript;
+				break;
+			}
+		}
+		
 		// init face colors
 		faceColors = FaceManager.GetFaceColors();
 		faceColorNames = FaceManager.GetFaceColorNames();
@@ -60,6 +73,10 @@ public class UserRecognizer : MonoBehaviour
 		
 		guiTexBack.Apply();
 		
+		if(hintText)
+		{
+			hintText.text = "Press Space to make a shot, or Ctrl to select a file.";
+		}
 	}
 
 
@@ -152,10 +169,10 @@ public class UserRecognizer : MonoBehaviour
 				
 				if(alNewFaceNames.Count > 0)
 				{
-					GUILayout.Label("Add new user:", labelStyle);
+					GUILayout.Label("New user:", labelStyle);
 					selected = GUILayout.SelectionGrid(selected, alNewFaceNames.ToArray (), 1);
 					
-					GUILayout.Label("As user name:", labelStyle);
+					GUILayout.Label("User name:", labelStyle);
 					userName = GUILayout.TextField(userName, 128);
 					
 					if(GUILayout.Button("Add User"))
@@ -205,12 +222,13 @@ public class UserRecognizer : MonoBehaviour
 	// makes camera shot and displays it on the camera-shot object
 	private bool DoCameraShot()
 	{
-		if(cameraShot && webcamSource)
+		if(cameraShot && imageSource != null)
 		{
-			Texture tex = webcamSource.GetSnapshot();
+			Texture tex = imageSource.GetImage();
 			cameraShot.texture = tex;
-			
-			webcamSource.gameObject.SetActive(false);
+
+			if(imageSource != null && imageSource.GetTransform() != null)
+				imageSource.GetTransform().gameObject.SetActive(false);
 			cameraShot.gameObject.SetActive(true);
 			
 			Vector3 localScale = cameraShot.transform.localScale;
@@ -242,8 +260,9 @@ public class UserRecognizer : MonoBehaviour
 			if(cameraShot)
 			{
 				cameraShot.texture = tex;
-				
-				webcamSource.gameObject.SetActive(false);
+
+				if(imageSource != null && imageSource.GetTransform() != null)
+					imageSource.GetTransform().gameObject.SetActive(false);
 				cameraShot.gameObject.SetActive(true);
 				
 				Vector3 localScale = cameraShot.transform.localScale;
@@ -261,14 +280,15 @@ public class UserRecognizer : MonoBehaviour
 	// switch back the webcam image
 	private bool DoSwitchWebcam()
 	{
-		if(cameraShot && webcamSource)
+		if(cameraShot && imageSource != null)
 		{
-			webcamSource.gameObject.SetActive(true);
+			if(imageSource != null && imageSource.GetTransform() != null)
+				imageSource.GetTransform().gameObject.SetActive(true);
 			cameraShot.gameObject.SetActive(false);
 			
 			if(hintText)
 			{
-				hintText.text = "Press Space to make a shot";
+				hintText.text = "Press Space to make a shot, or Ctrl to select a file.";
 			}
 			
 			return true;
@@ -310,7 +330,7 @@ public class UserRecognizer : MonoBehaviour
 					
 					if(hintText)
 					{
-						hintText.text = "Press Space to return to webcam";
+						hintText.text = "Press Space or Ctrl to return.";
 					}
 				}
 				else
@@ -379,7 +399,7 @@ public class UserRecognizer : MonoBehaviour
 				{
 					if(hintText != null)
 					{
-						hintText.text = "Face added successfully.";
+						hintText.text = string.Format("User '{0}' created successfully.", userName);
 					}
 				}
 				else

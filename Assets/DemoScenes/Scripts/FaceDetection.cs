@@ -4,8 +4,8 @@ using System.IO;
 
 public class FaceDetection : MonoBehaviour 
 {
-	[Tooltip("WebCam source used for camera shots.")]
-	public WebcamSource webcamSource;
+	[Tooltip("Image source used for getting face images.")]
+	public ImageSourceInterface imageSource;
 
 	[Tooltip("Game object used for camera shot rendering.")]
 	public Renderer cameraShot;
@@ -29,6 +29,19 @@ public class FaceDetection : MonoBehaviour
 
 	void Start () 
 	{
+		// get the first image source among mono behaviors
+		MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
+		
+		foreach(MonoBehaviour monoScript in monoScripts)
+		{
+			if(typeof(ImageSourceInterface).IsAssignableFrom(monoScript.GetType()) &&
+			   monoScript.enabled)
+			{
+				imageSource = (ImageSourceInterface)monoScript;
+				break;
+			}
+		}
+		
 		// init face colors
 		faceColors = FaceManager.GetFaceColors();
 		faceColorNames = FaceManager.GetFaceColorNames();
@@ -119,7 +132,8 @@ public class FaceDetection : MonoBehaviour
 			
 			if(selected)
 			{
-				if(webcamSource && selected == webcamSource.gameObject)
+				if(imageSource != null && imageSource.GetTransform() != null && 
+				   selected == imageSource.GetTransform().gameObject)
 				{
 					if(DoCameraShot())
 					{
@@ -141,9 +155,9 @@ public class FaceDetection : MonoBehaviour
 	// makes camera shot and displays it on the camera-shot object
 	private bool DoCameraShot()
 	{
-		if(cameraShot && webcamSource)
+		if(cameraShot && imageSource != null)
 		{
-			Texture tex = webcamSource.GetSnapshot();
+			Texture tex = imageSource.GetImage();
 			cameraShot.GetComponent<Renderer>().material.mainTexture = tex;
 
 			Vector3 localScale = cameraShot.transform.localScale;

@@ -346,6 +346,7 @@ public class UserGroupManager : MonoBehaviour
 		if(faceManager != null && !string.IsNullOrEmpty(userGroupId) && person != null)
 		{
 			faceManager.DeletePerson(userGroupId, person.PersonId.ToString());
+			faceManager.TrainPersonGroup(userGroupId);
 		}
 	}
 	
