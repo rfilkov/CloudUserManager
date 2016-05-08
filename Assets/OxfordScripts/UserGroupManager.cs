@@ -178,15 +178,15 @@ public class UserGroupManager : MonoBehaviour
 	/// <summary>
 	/// Adds the user to group.
 	/// </summary>
-	/// <returns>User face ID.</returns>
+	/// <returns>Person or null.</returns>
 	/// <param name="userName">User name.</param>
 	/// <param name="userData">User data.</param>
 	/// <param name="texImage">Image texture.</param>
 	/// <param name="faceRect">Face rectangle.</param>
-	public string AddUserToGroup(string userName, string userData, Texture2D texImage, FaceRectangle faceRect)
+	public Person AddUserToGroup(string userName, string userData, Texture2D texImage, FaceRectangle faceRect)
 	{
 		if(texImage == null)
-			return string.Empty;
+			return null;
 		
 		byte[] imageBytes = texImage != null ? texImage.EncodeToJPG() : null;
 		return AddUserToGroup(userName, userData, imageBytes, faceRect);
@@ -196,18 +196,18 @@ public class UserGroupManager : MonoBehaviour
 	/// <summary>
 	/// Adds the user to group.
 	/// </summary>
-	/// <returns>User face ID.</returns>
+	/// <returns>Person or null.</returns>
 	/// <param name="userName">User name.</param>
 	/// <param name="userData">User data.</param>
 	/// <param name="imageBytes">Image bytes.</param>
 	/// <param name="faceRect">Face rectangle.</param>
-	public string AddUserToGroup(string userName, string userData, byte[] imageBytes, FaceRectangle faceRect)
+	public Person AddUserToGroup(string userName, string userData, byte[] imageBytes, FaceRectangle faceRect)
 	{
 		// create the user-group if needed
 		if(!isInitialized)
 			isInitialized = GetOrGreateUserGroup();
 		if(!isInitialized)
-			return string.Empty;
+			return null;
 		
 		if(faceManager != null)
 		{
@@ -232,13 +232,17 @@ public class UserGroupManager : MonoBehaviour
 
 				if(personFace != null)
 				{
+					person.PersistedFaceIds = new Guid[1];
+					person.PersistedFaceIds[0] = personFace.PersistedFaceId;
+
 					faceManager.TrainPersonGroup(userGroupId);
-					return personFace.PersistedFaceId.ToString();
 				}
 			}
+
+			return person;
 		}
 
-		return string.Empty;
+		return null;
 	}
 
 

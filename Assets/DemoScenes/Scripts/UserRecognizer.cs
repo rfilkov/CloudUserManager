@@ -363,14 +363,6 @@ public class UserRecognizer : MonoBehaviour
 	}
 	
 
-	// identifies users on the camera shot
-	private bool IdentifyUsersOnTexture(Texture2D texCamShot)
-	{
-
-		return false;
-	}
-	
-	
 	// adds the new user to user group
 	private IEnumerator AddUserToGroup(Face face, string userName)
 	{
@@ -395,8 +387,31 @@ public class UserRecognizer : MonoBehaviour
 			if(texCamShot && userManager && face != null && userName != string.Empty)
 			{
 				FaceRectangle faceRect = face.FaceRectangle;
-				if(!string.IsNullOrEmpty(userManager.AddUserToGroup(userName, string.Empty, texCamShot, faceRect)))
+				Person person = userManager.AddUserToGroup(userName, string.Empty, texCamShot, faceRect);
+
+				if(person != null && person.PersistedFaceIds != null && person.PersistedFaceIds.Length > 0)
 				{
+					Guid faceId = face.FaceId;
+					bool bFaceFound = false;
+
+					for(int i = 0; i < faces.Length; i++)
+					{
+						if(faces[i].FaceId == faceId)
+						{
+							if(faces[i].Candidate == null)
+							{
+								faces[i].Candidate = new Candidate();
+
+								faces[i].Candidate.PersonId = person.PersonId;
+								faces[i].Candidate.Confidence = 1f;
+								faces[i].Candidate.Person = person;
+							}
+
+							bFaceFound = true;
+							break;
+						}
+					}
+
 					if(hintText != null)
 					{
 						hintText.text = string.Format("User '{0}' created successfully.", userName);
