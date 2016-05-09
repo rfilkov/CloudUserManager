@@ -70,9 +70,11 @@ public class PersonsManager : MonoBehaviour {
     {
         if (selectedPerson != null)
         {
-            StartCoroutine(DeletePerson(selectedPerson));
+            modalPanel.ShowYesNoDialog(string.Format("Are you sure you want to delete {0}?", selectedPerson.Name), () => {
+                StartCoroutine(DeletePerson(selectedPerson));
 
-            selectedPerson = null;
+                selectedPerson = null;
+            });
         }
     }
 
@@ -117,15 +119,6 @@ public class PersonsManager : MonoBehaviour {
 				}
 
 				return null;
-
-//                Thread.Sleep(3000);
-//
-//                return new List<Person>()
-//                {
-//                    new Person { Name = "Andy Murray", PersonId = Guid.NewGuid() },
-//                    new Person { Name = "Roger Federer", PersonId = Guid.NewGuid() },
-//                    new Person { Name = "Novak Djokovic", PersonId = Guid.NewGuid() },
-//                };
             }
             catch (Exception ex)
             {
@@ -141,7 +134,7 @@ public class PersonsManager : MonoBehaviour {
             yield return null;
 
         modalPanel.Hide();
-        persons = task.Result;
+        persons = task.Result.OrderBy(p => p.Name).ToList();
 
 		if(persons != null)
 		{
@@ -201,8 +194,6 @@ public class PersonsManager : MonoBehaviour {
 					return true;
 				}
 
-                //Thread.Sleep(2000);
-
                 return false;
             }
             catch (Exception ex)
@@ -227,10 +218,8 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            //Person p = persons.Find(x => x.PersonId == id);
             if (p != null)
             {
-                //p.Name = name;
                 GameObject personPanelInstance = personsPanels[p.PersonId];
                 Text personName = personPanelInstance.GetComponentInChildren<Text>();
                 personName.text = name;
@@ -258,8 +247,6 @@ public class PersonsManager : MonoBehaviour {
 					return true;
 				}
 				
-                //Thread.Sleep(2000);
-
                 return false;
             }
             catch (Exception ex)
@@ -284,7 +271,6 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            //Person p = new Person { Name = name, PersonId = Guid.NewGuid() };
 			if(p != null)
 			{
             	persons.Add(p);
@@ -297,8 +283,6 @@ public class PersonsManager : MonoBehaviour {
 
     private IEnumerator DeletePerson(Person p)
     {
-        //TO DO: Ask first ... 
-
         modalPanel.ShowProgress("Deleting player, Please Wait ...");
 
         AsyncTask<bool> task = new AsyncTask<bool>(() =>
@@ -313,8 +297,6 @@ public class PersonsManager : MonoBehaviour {
 					groupMgr.DeleteUser(p);
 					return true;
 				}
-				
-                //Thread.Sleep(2000);
 
                 return false;
             }
@@ -340,7 +322,6 @@ public class PersonsManager : MonoBehaviour {
         else {
             HidePersonDetails();
 
-            //Person p = persons.Find(x => x.PersonId == id);
             if (p != null)
             {
                 persons.Remove(p);

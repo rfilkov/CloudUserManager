@@ -7,6 +7,8 @@ public class ModalPanel : MonoBehaviour {
 
     public Text messageText;
     public Button abortButton;
+    public Button yesButton;
+    public Button noButton;
     public GameObject modalPanelObject;
 
     private static ModalPanel modalPanel;
@@ -25,30 +27,55 @@ public class ModalPanel : MonoBehaviour {
 
     public void ShowProgress(string message = null, UnityAction abortEvent = null)
     {
-        Show("Abort", message, abortEvent);
-    }
-
-    public void ShowMessage(string message, UnityAction closeEvent = null)
-    {
-        Show("Close", message, closeEvent);
-    }
-
-    private void Show(string buttonLabel, string message = null, UnityAction abortEvent = null)
-    {
         modalPanelObject.SetActive(true);
-
-        abortButton.GetComponentInChildren<Text>().text = buttonLabel;
-        abortButton.onClick.RemoveAllListeners();
-        abortButton.onClick.AddListener(Hide);
-        if (abortEvent != null)
-            abortButton.onClick.AddListener(abortEvent);
 
         if (message != null)
         {
             messageText.text = message;
         }
 
-        abortButton.gameObject.SetActive(true);
+        ShowButton(abortButton, "Abort", abortEvent);
+        HideButton(yesButton);
+        HideButton(noButton);
+    }
+
+    public void ShowMessage(string message, UnityAction closeEvent = null)
+    {
+        modalPanelObject.SetActive(true);
+
+        messageText.text = message;
+
+        ShowButton(abortButton, "Close", closeEvent);
+        HideButton(yesButton);
+        HideButton(noButton);
+    }
+
+    public void ShowYesNoDialog(string message, UnityAction yesEvent = null, UnityAction noEvent = null)
+    {
+        modalPanelObject.SetActive(true);
+
+        messageText.text = message;
+        
+        ShowButton(yesButton, "Yes", yesEvent);
+        ShowButton(noButton, "No", noEvent);
+        HideButton(abortButton);
+    }
+
+    private void ShowButton(Button btn, string label, UnityAction action)
+    {
+        btn.gameObject.SetActive(true);
+
+        btn.GetComponentInChildren<Text>().text = label;
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(Hide);
+        if (action != null)
+            btn.onClick.AddListener(action);        
+    }
+
+    private void HideButton(Button btn)
+    {
+        btn.onClick.RemoveAllListeners();
+        btn.gameObject.SetActive(false);
     }
 
     public void Hide()
