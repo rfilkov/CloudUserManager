@@ -412,6 +412,11 @@ public class UserRecognizer : MonoBehaviour
 						}
 					}
 
+					if(!bFaceFound)
+					{
+						Debug.Log(string.Format("Face {0} not found.", faceId));
+					}
+
 					if(hintText != null)
 					{
 						hintText.text = string.Format("User '{0}' created successfully.", userName);

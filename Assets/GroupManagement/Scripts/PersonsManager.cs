@@ -7,14 +7,15 @@ using System;
 using UnityEngine.EventSystems;
 using System.Linq;
 
-public class PersonsManager : MonoBehaviour {
-
+public class PersonsManager : MonoBehaviour 
+{
     public GameObject personsListPanel;
     public GameObject personDetailsPanel;
 
+	public GameObject personPanelPrefab;
+
     private RectTransform personsListContent;
     private ModalPanel modalPanel;
-    private GameObject personPanelPrefab;
     private List<Person> persons;
     private Person selectedPerson;
     private Dictionary<Guid, GameObject> personsPanels = new Dictionary<Guid, GameObject>();
@@ -22,7 +23,7 @@ public class PersonsManager : MonoBehaviour {
     void Awake()
     {
         modalPanel = ModalPanel.Instance();
-        personPanelPrefab = Resources.LoadAssetAtPath<GameObject>("Assets/GroupManagement/Prefabs/PersonListItem.prefab");
+        //personPanelPrefab = Resources.LoadAssetAtPath<GameObject>("Assets/GroupManagement/Prefabs/PersonListItem.prefab");
 
         personsListContent = personsListPanel.FindComponentInChildWithTag<RectTransform>("ListViewContent");
     }
@@ -134,10 +135,13 @@ public class PersonsManager : MonoBehaviour {
             yield return null;
 
         modalPanel.Hide();
-        persons = task.Result.OrderBy(p => p.Name).ToList();
+		persons = task.Result;
 
 		if(persons != null)
 		{
+			// sort the person names alphabetically
+			persons = persons.OrderBy(p => p.Name).ToList();
+
 			foreach (Person p in persons)
 			{
 				InstantiatePersonPanel(p);
@@ -153,6 +157,12 @@ public class PersonsManager : MonoBehaviour {
 
     private void InstantiatePersonPanel(Person p)
     {
+		if(!personPanelPrefab)
+		{
+			Debug.LogError("PersonPanel-prefab not set.");
+			return;
+		}
+
         GameObject personPanelInstance = Instantiate<GameObject>(personPanelPrefab);
 
 		GameObject personNameObj = personPanelInstance.transform.Find("PersonName").gameObject;

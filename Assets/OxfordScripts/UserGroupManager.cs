@@ -176,6 +176,28 @@ public class UserGroupManager : MonoBehaviour
 
 
 	/// <summary>
+	/// Gets the user by ID.
+	/// </summary>
+	/// <returns>The user or null.</returns>
+	/// <param name="personId">Person ID</param>
+	public Person GetUserById(string personId)
+	{
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return null;
+
+		Person person = null;
+		if(faceManager != null && !string.IsNullOrEmpty(userGroupId))
+		{
+			person = faceManager.GetPerson(userGroupId, personId);
+		}
+		
+		return person;
+	}
+	
+	
+	/// <summary>
 	/// Adds the user to group.
 	/// </summary>
 	/// <returns>Person or null.</returns>
