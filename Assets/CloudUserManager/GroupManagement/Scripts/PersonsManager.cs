@@ -86,7 +86,7 @@ public class PersonsManager : MonoBehaviour
 
     private IEnumerator LoadPersons()
     {
-        modalPanel.ShowProgress("Loading Players, Please Wait ...");
+        modalPanel.ShowProgress("Loading users. Please wait ...");
 
         // Clear persons from the list
         if(persons != null) persons.Clear();
@@ -149,7 +149,7 @@ public class PersonsManager : MonoBehaviour
 		}
 		else
 		{
-			Debug.LogError("Error loading players' list. Check FaceManager- and UserGroupManager-components.");
+			Debug.LogError("Error loading users' list. Check the FaceManager- and UserGroupManager-components.");
 		}
 
         yield return null;
@@ -293,7 +293,7 @@ public class PersonsManager : MonoBehaviour
 
     private IEnumerator DeletePerson(Person p)
     {
-        modalPanel.ShowProgress("Deleting player, Please Wait ...");
+        modalPanel.ShowProgress("Deleting user, Please Wait ...");
 
         AsyncTask<bool> task = new AsyncTask<bool>(() =>
         {
@@ -327,7 +327,7 @@ public class PersonsManager : MonoBehaviour
 
         if (!task.Result)
         {
-            modalPanel.ShowMessage("Error deleting player!");
+            modalPanel.ShowMessage("Error deleting user!");
         }
         else {
             HidePersonDetails();

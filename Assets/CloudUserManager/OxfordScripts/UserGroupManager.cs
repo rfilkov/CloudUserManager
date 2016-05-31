@@ -92,6 +92,71 @@ public class UserGroupManager : MonoBehaviour
 
 
 	/// <summary>
+	/// Starts group training.
+	/// </summary>
+	/// <returns><c>true</c>, if group training was started successfully, <c>false</c> otherwise.</returns>
+	public bool StartGroupTraining()
+	{
+		// create the user-group if needed
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return false;
+
+		if(faceManager != null)
+		{
+			return faceManager.TrainPersonGroup(userGroupId);
+		}
+
+		return false;
+	}
+
+
+	/// <summary>
+	/// Gets the group training status.
+	/// </summary>
+	/// <returns>The training status (may be null).</returns>
+	public TrainingStatus GetTrainingStatus()
+	{
+		// create the user-group if needed
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return null;
+		
+		// get the training status
+		TrainingStatus training = null;
+		if(faceManager != null)
+		{
+			training = faceManager.GetPersonGroupTrainingStatus(userGroupId);
+		}
+		
+		return training;
+	}
+	
+	
+	/// <summary>
+	/// Determines whether the group training is finished.
+	/// </summary>
+	/// <returns><c>true</c> if the group training is finished; otherwise, <c>false</c>.</returns>
+	public bool IsGroupTrained()
+	{
+		// create the user-group if needed
+		if(!isInitialized)
+			isInitialized = GetOrGreateUserGroup();
+		if(!isInitialized)
+			return false;
+		
+		if(faceManager != null)
+		{
+			return faceManager.IsPersonGroupTrained(userGroupId);
+		}
+		
+		return false;
+	}
+	
+	
+	/// <summary>
 	/// Identifies the users on the image.
 	/// </summary>
 	/// <returns><c>true</c>, if identification completed successfully, <c>false</c> otherwise.</returns>
@@ -131,13 +196,42 @@ public class UserGroupManager : MonoBehaviour
 		{
 			faces = faceManager.DetectFaces(imageBytes);
 
-			// wait for the group to finish training
-			float waitTill = Time.time + 5f;
-			while(!faceManager.IsPersonGroupTrained(userGroupId) && (Time.time < waitTill))
+			// get the training status
+			TrainingStatus training = faceManager.GetPersonGroupTrainingStatus(userGroupId);
+			bool bEmptyGroup = false;
+
+			if(training != null && training.Status == Status.Failed)
 			{
-				System.Threading.Thread.Sleep(250);
+				// check if there are persons in this group
+				List<Person> listPersons = GetUsersList();
+
+				if(listPersons.Count > 0)
+				{
+					// retrain the group
+					faceManager.TrainPersonGroup(userGroupId);
+				}
+				else
+				{
+					// empty list - always returns 'training failed'
+					training.Status = Status.Succeeded;
+					bEmptyGroup = true;
+				}
 			}
 			
+			float waitTill = Time.realtimeSinceStartup + 5f;
+			while((training == null || training.Status != Status.Succeeded) && (Time.realtimeSinceStartup < waitTill))
+			{
+				// wait for training to succeed
+				System.Threading.Thread.Sleep(1000);
+				training = faceManager.GetPersonGroupTrainingStatus(userGroupId);
+			}
+
+			if(bEmptyGroup)
+			{
+				// nothing to check
+				return true;
+			}
+
 			if(faces != null && faces.Length > 0)
 			{
 				results = faceManager.IdentifyFaces(userGroupId, ref faces, 1);

@@ -80,39 +80,6 @@ public class FaceDetection : MonoBehaviour
 			DoMouseClick();
 		}
 
-		if(Input.GetButton("Jump"))
-		{
-			//bool bRes = FaceManager.Instance.CreatePersonGroup("testusers", "Test Users", "group=test");
-			//Debug.Log(bRes);
-			FaceManager faceManager = FaceManager.Instance;
-			Person[] persons = faceManager.ListPersonsInGroup("testusers");
-			//Person person = faceManager.AddPersonToGroup("testusers", "Tester", "Here I come.");
-			
-			foreach(Person person in persons)
-			{
-				if(person != null)
-				{
-					Debug.Log("Person " + person.Name + ", ID: " + person.PersonId);
-				}
-			}
-			
-			if(persons.Length > 0)
-			{
-				Texture2D texCamShot = (Texture2D)cameraShot.GetComponent<Renderer>().material.mainTexture;
-				string personId = persons[0].PersonId.ToString();
-				
-				// add person face
-				PersonFace face = faceManager.AddFaceToPerson("testusers", personId, string.Empty, null, texCamShot);
-				Debug.Log("Added face: " + face.PersistedFaceId);
-				
-				// train the group
-				faceManager.TrainPersonGroup("testusers");
-				
-				// check if training is finished
-				Debug.Log("Trained: " + faceManager.IsPersonGroupTrained("testusers"));
-			}
-		}
-
 		// check for Esc, to stop the app
 		if(Input.GetKey(KeyCode.Escape))
 		{

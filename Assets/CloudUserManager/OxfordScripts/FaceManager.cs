@@ -649,6 +649,20 @@ public class FaceManager : MonoBehaviour
 	/// <param name="groupId">Person-group ID.</param>
 	public bool IsPersonGroupTrained(string groupId)
 	{
+		TrainingStatus status = GetPersonGroupTrainingStatus(groupId);
+		bool bSuccess = (status != null && status.Status == Status.Succeeded);
+		
+		return bSuccess;
+	}
+
+
+	/// <summary>
+	/// Gets the person-group's training status.
+	/// </summary>
+	/// <returns>The group's training status.</returns>
+	/// <param name="groupId">Person-group ID.</param>
+	public TrainingStatus GetPersonGroupTrainingStatus(string groupId)
+	{
 		if(string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
@@ -672,9 +686,7 @@ public class FaceManager : MonoBehaviour
 			ProcessFaceError(response);
 		}
 
-		bool bSuccess = (status != null && status.Status == Status.Succeeded);
-
-		return bSuccess;
+		return status;
 	}
 	
 
