@@ -32,6 +32,7 @@ public class PersonsManager : MonoBehaviour
     void Start()
     {
         StartCoroutine(LoadPersons());
+        StartCoroutine(CheckGroupStatus());        
     }
 
     public void OnAddNewPerson()
@@ -82,6 +83,122 @@ public class PersonsManager : MonoBehaviour
     public void OnReloadPersons()
     {
         StartCoroutine(LoadPersons());
+    }
+
+    public void OnTrainGroup()
+    {
+        StartCoroutine(TrainGroup());
+    }
+
+    private IEnumerator TrainGroup()
+    {
+        AsyncTask<bool> task = new AsyncTask<bool>(() =>
+        {
+            try
+            {
+                UserGroupManager groupMgr = UserGroupManager.Instance;
+
+                return groupMgr.StartGroupTraining();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Failed to process task: " + ex.Message);
+                return false;
+            }
+        });
+
+        bool abort = false;
+        modalPanel.ShowProgress("Starting Group Training. Please wait ...", () => abort = true);
+
+        task.Start();
+        yield return null;
+
+        while (task.State == TaskState.Running)
+            yield return null;
+
+        if (!task.Result)
+        {
+            modalPanel.ShowMessage("Group training failed. Please, try again later!");
+            yield return null;
+        }
+        else if(!abort)
+        {
+            task = new AsyncTask<bool>(() =>
+            {
+                try
+                {
+                    UserGroupManager groupMgr = UserGroupManager.Instance;
+
+                    bool isTrained = false;
+                    int retries = 0;
+                    while (!isTrained && retries++ < 3 && !abort)
+                    {
+                        Thread.Sleep(5000);
+                        isTrained = groupMgr.IsGroupTrained();
+                    }
+
+                    return isTrained;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("Failed to process task: " + ex.Message);
+                    return false;
+                }
+            });
+
+            task.Start();
+            yield return null;
+
+            while (task.State == TaskState.Running)
+                yield return null;
+
+            if (!abort)
+            {
+                if (!task.Result)
+                {
+                    modalPanel.ShowMessage("Group training failed. Please, try again later!");
+                }
+                else
+                {
+                    modalPanel.ShowMessage("Group training succeed!");
+
+                    TrainGroupButton.SetActive(false);
+                }
+            }
+        }
+
+        yield return null;
+    }
+
+    private IEnumerator CheckGroupStatus()
+    {
+        AsyncTask<bool> task = new AsyncTask<bool>(() =>
+        {
+            try
+            {
+                UserGroupManager groupMgr = UserGroupManager.Instance;
+
+                return groupMgr.IsGroupTrained();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Failed to process task: " + ex.Message);
+                return false;
+            }
+        });
+
+        task.Start();
+        yield return null;
+
+        while (task.State == TaskState.Running)
+            yield return null;
+
+        if (!task.Result)
+        {
+            TrainGroupButton.SetActive(true);
+        }
+
+        yield return null;
     }
 
     private IEnumerator LoadPersons()
@@ -406,6 +523,14 @@ public class PersonsManager : MonoBehaviour
             Text personID = FindComponent<Text>(personDetailsPanel, "TextPersonID");
             if (personID)
                 personID.text = value ?? "";
+        }
+    }
+
+    private GameObject TrainGroupButton
+    {
+        get
+        {
+            return personsListPanel.FindChildWithTag("TrainGroupButton");
         }
     }
 
