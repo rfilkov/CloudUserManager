@@ -102,13 +102,13 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+                Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return false;
             }
         });
 
         bool abort = false;
-        modalPanel.ShowProgress("Starting Group Training. Please wait ...", () => abort = true);
+        modalPanel.ShowProgress("Started group training. Please wait.", () => abort = true);
 
         task.Start();
         yield return null;
@@ -118,7 +118,7 @@ public class PersonsManager : MonoBehaviour
 
         if (!task.Result)
         {
-            modalPanel.ShowMessage("Group training failed. Please, try again later!");
+            modalPanel.ShowMessage("Group training failed. Please, try again later.");
             yield return null;
         }
         else if(!abort)
@@ -141,7 +141,7 @@ public class PersonsManager : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError("Failed to process task: " + ex.Message);
+					Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                     return false;
                 }
             });
@@ -156,11 +156,11 @@ public class PersonsManager : MonoBehaviour
             {
                 if (!task.Result)
                 {
-                    modalPanel.ShowMessage("Group training failed. Please, try again later!");
+                    modalPanel.ShowMessage("Group training failed. Please, try again later.");
                 }
                 else
                 {
-                    modalPanel.ShowMessage("Group training succeed!");
+                    modalPanel.ShowMessage("Group training succeeded.");
 
                     TrainGroupButton.SetActive(false);
                 }
@@ -182,7 +182,7 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return false;
             }
         });
@@ -240,7 +240,7 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return null;
             }
         });
@@ -325,7 +325,7 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return false;
             }
         });
@@ -378,7 +378,7 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return false;
             }
         });
@@ -429,7 +429,7 @@ public class PersonsManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to process task: " + ex.Message);
+				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
                 return false;
             }
         });

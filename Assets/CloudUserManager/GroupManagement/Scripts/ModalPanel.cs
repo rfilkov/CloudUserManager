@@ -34,7 +34,7 @@ public class ModalPanel : MonoBehaviour {
             messageText.text = message;
         }
 
-        ShowButton(abortButton, "Abort", abortEvent);
+        ShowButton(abortButton, "Cancel", abortEvent);
         HideButton(yesButton);
         HideButton(noButton);
     }
