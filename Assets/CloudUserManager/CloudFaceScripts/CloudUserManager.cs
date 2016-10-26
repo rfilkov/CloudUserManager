@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-public class UserGroupManager : MonoBehaviour 
+public class CloudUserManager : MonoBehaviour 
 {
 	[Tooltip("ID (short name) of the user group, containing the face-identified users. It will be created, if not found.")]
 	public string userGroupId = "game-users";
@@ -15,21 +15,21 @@ public class UserGroupManager : MonoBehaviour
 	public GUIText debugText;
 
 	// the face manager
-	private FaceManager faceManager = null;
+	private CloudFaceManager faceManager = null;
 
 	// the person group object
 	private PersonGroup personGroup = null;
 
-	private static UserGroupManager instance = null;
+	private static CloudUserManager instance = null;
 	private bool isInitialized = false;
 
 
 
 	/// <summary>
-	/// Gets the UserGroupManager instance.
+	/// Gets the CloudUserManager instance.
 	/// </summary>
-	/// <value>The UserGroupManager instance.</value>
-	public static UserGroupManager Instance
+	/// <value>The CloudUserManager instance.</value>
+	public static CloudUserManager Instance
 	{
 		get
 		{
@@ -59,7 +59,7 @@ public class UserGroupManager : MonoBehaviour
 				throw new Exception("Please set the user-group name.");
 			}
 			
-			faceManager = FaceManager.Instance;
+			faceManager = CloudFaceManager.Instance;
 			if(faceManager != null)
 			{
 				if(string.IsNullOrEmpty(faceManager.faceSubscriptionKey))

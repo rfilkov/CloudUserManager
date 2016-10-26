@@ -7,7 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 
-public class WebTools 
+public class CloudWebTools 
 {
 
 	// calls web service with url, content and headers

@@ -31,7 +31,7 @@ public class GuiWebcam : MonoBehaviour, ImageSourceInterface
 			
 			if(flipHorizontally)
 			{
-				snap = TexTools.FlipTexture(snap);
+				snap = CloudTexTools.FlipTexture(snap);
 			}
 		}
 

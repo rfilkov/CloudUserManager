@@ -56,8 +56,8 @@ public class UserRecognizer : MonoBehaviour
 		}
 		
 		// init face colors
-		faceColors = FaceManager.GetFaceColors();
-		faceColorNames = FaceManager.GetFaceColorNames();
+		faceColors = CloudFaceManager.GetFaceColors();
+		faceColorNames = CloudFaceManager.GetFaceColorNames();
 
 		// initialize gui backfround tex
 		guiTexBack = new Texture2D(64, 64, TextureFormat.ARGB32, false);
@@ -319,14 +319,14 @@ public class UserRecognizer : MonoBehaviour
 		try 
 		{
 			// get the user manager instance
-			UserGroupManager userManager = UserGroupManager.Instance;
+			CloudUserManager userManager = CloudUserManager.Instance;
 			
 			if(texCamShot && userManager)
 			{
 				if(userManager.IdentifyUsers(texCamShot, ref faces, ref results))
 				{
 					// draw face rects
-					FaceManager.DrawFaceRects(texCamShot, faces, faceColors);
+					CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
 					
 					if(hintText)
 					{
@@ -382,7 +382,7 @@ public class UserRecognizer : MonoBehaviour
 		
 		try 
 		{
-			UserGroupManager userManager = UserGroupManager.Instance;
+			CloudUserManager userManager = CloudUserManager.Instance;
 			
 			if(texCamShot && userManager && face != null && userName != string.Empty)
 			{

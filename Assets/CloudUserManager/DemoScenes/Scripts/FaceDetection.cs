@@ -43,18 +43,18 @@ public class FaceDetection : MonoBehaviour
 		}
 		
 		// init face colors
-		faceColors = FaceManager.GetFaceColors();
-		faceColorNames = FaceManager.GetFaceColorNames();
+		faceColors = CloudFaceManager.GetFaceColors();
+		faceColorNames = CloudFaceManager.GetFaceColorNames();
 
 		bool bErrorFound = false;
-		if(FaceManager.Instance)
+		if(CloudFaceManager.Instance)
 		{
-			if(string.IsNullOrEmpty(FaceManager.Instance.faceSubscriptionKey))
+			if(string.IsNullOrEmpty(CloudFaceManager.Instance.faceSubscriptionKey))
 			{
 				SetHintText("Please set your face-subscription key.");
 				bErrorFound = true;
 			}
-			else if(recognizeEmotions && string.IsNullOrEmpty(FaceManager.Instance.emotionSubscriptionKey))
+			else if(recognizeEmotions && string.IsNullOrEmpty(CloudFaceManager.Instance.emotionSubscriptionKey))
 			{
 				SetHintText("Please set your emotion-subscription key.");
 				bErrorFound = true;
@@ -62,7 +62,7 @@ public class FaceDetection : MonoBehaviour
 		}
 		else
 		{
-			SetHintText("FaceManager-component not found.");
+			SetHintText("CloudFaceManager-component not found.");
 			bErrorFound = true;
 		}
 
@@ -185,7 +185,7 @@ public class FaceDetection : MonoBehaviour
 		try 
 		{
 			// get the face manager instance
-			FaceManager faceManager = FaceManager.Instance;
+			CloudFaceManager faceManager = CloudFaceManager.Instance;
 
 			if(texCamShot && faceManager)
 			{
@@ -213,7 +213,7 @@ public class FaceDetection : MonoBehaviour
 						}
 					}
 
-					FaceManager.DrawFaceRects(texCamShot, faces, faceColors);
+					CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
 					SetHintText("Click on the camera image to make a shot");
 				}
 				else
@@ -262,7 +262,7 @@ public class FaceDetection : MonoBehaviour
 				sbResult.Append(string.Format("    Age: {0}", face.FaceAttributes.Age)).AppendLine();
 				sbResult.Append(string.Format("    Smile: {0:F0}%", face.FaceAttributes.Smile * 100f)).AppendLine();
 				if(recognizeEmotions)
-					sbResult.Append(string.Format("    Emotion: {0}", FaceManager.GetEmotionScoresAsString(face.Emotion))).AppendLine();
+					sbResult.Append(string.Format("    Emotion: {0}", CloudFaceManager.GetEmotionScoresAsString(face.Emotion))).AppendLine();
 				sbResult.AppendLine();
 				
 				GUILayout.Label(sbResult.ToString());

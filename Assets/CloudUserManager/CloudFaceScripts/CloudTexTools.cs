@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class TexTools
+public class CloudTexTools
 {
 	// flips texture horizontally
 	public static Texture2D FlipTexture(Texture2D original)

@@ -96,7 +96,7 @@ public class PersonsManager : MonoBehaviour
         {
             try
             {
-                UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
                 return groupMgr.StartGroupTraining();
             }
@@ -127,7 +127,7 @@ public class PersonsManager : MonoBehaviour
             {
                 try
                 {
-                    UserGroupManager groupMgr = UserGroupManager.Instance;
+					CloudUserManager groupMgr = CloudUserManager.Instance;
 
                     bool isTrained = false;
                     int retries = 0;
@@ -176,7 +176,7 @@ public class PersonsManager : MonoBehaviour
         {
             try
             {
-                UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
                 return groupMgr.IsGroupTrained();
             }
@@ -219,7 +219,7 @@ public class PersonsManager : MonoBehaviour
             try
             {
                 //Load Persons here
-				UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
 				// wait for the group manager to start
 				int waitPeriods = 10;
@@ -228,7 +228,7 @@ public class PersonsManager : MonoBehaviour
 					Thread.Sleep(500);
 					waitPeriods--;
 
-					groupMgr = UserGroupManager.Instance;
+					groupMgr = CloudUserManager.Instance;
 				}
 
 				if(groupMgr != null)
@@ -310,7 +310,7 @@ public class PersonsManager : MonoBehaviour
             try
             {
                 // update data in the cloud
-				UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
 				if(groupMgr != null && p != null)
 				{
@@ -366,7 +366,7 @@ public class PersonsManager : MonoBehaviour
             try
             {
                 // update data in the cloud
-				UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
 				if(groupMgr != null && persons != null)
 				{
@@ -417,7 +417,7 @@ public class PersonsManager : MonoBehaviour
             try
             {
                 // update data in the cloud
-				UserGroupManager groupMgr = UserGroupManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 				
 				if(groupMgr != null && p != null && persons != null)
 				{
@@ -545,7 +545,7 @@ public class PersonsManager : MonoBehaviour
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
         entry.callback.AddListener((eventData) => { OnPersonClick(p); });
-        trigger.delegates.Add(entry);
+        trigger.triggers.Add(entry);
     }
 
     private void OnPersonClick(Person p)

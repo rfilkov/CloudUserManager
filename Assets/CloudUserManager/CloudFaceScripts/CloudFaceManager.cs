@@ -9,7 +9,7 @@ using System.Net;
 using System.IO;
 
 
-public class FaceManager : MonoBehaviour 
+public class CloudFaceManager : MonoBehaviour 
 {
 	[Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
@@ -20,7 +20,7 @@ public class FaceManager : MonoBehaviour
 	private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
 	private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
 
-	private static FaceManager instance = null;
+	private static CloudFaceManager instance = null;
 	private bool isInitialized = false;
 
 
@@ -37,10 +37,10 @@ public class FaceManager : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Gets the FaceManager instance.
+	/// Gets the CloudFaceManager instance.
 	/// </summary>
-	/// <value>The FaceManager instance.</value>
-	public static FaceManager Instance
+	/// <value>The CloudFaceManager instance.</value>
+	public static CloudFaceManager Instance
 	{
 		get
 		{
@@ -92,10 +92,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 		
 		Face[] faces = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
@@ -154,10 +154,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 		
 		Emotion[] emotions = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
@@ -311,7 +311,7 @@ public class FaceManager : MonoBehaviour
 			Color faceColor = faceColors[i % faceColors.Length];
 			
 			FaceRectangle rect = face.FaceRectangle;
-			TexTools.DrawRect(tex, rect.Left, rect.Top, rect.Width, rect.Height, faceColor);
+			CloudTexTools.DrawRect(tex, rect.Left, rect.Top, rect.Width, rect.Height, faceColor);
 		}
 		
 		tex.Apply();
@@ -339,9 +339,9 @@ public class FaceManager : MonoBehaviour
 
 		string sJsonContent = JsonConvert.SerializeObject(new { name = groupName, userData = userData }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
 		
-		if(WebTools.IsErrorStatus(response))
+		if(CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 			return false;
@@ -368,10 +368,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
 		
 		PersonGroup group = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			group = JsonConvert.DeserializeObject<PersonGroup>(reader.ReadToEnd(), jsonSettings);
@@ -402,10 +402,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
 
 		Person[] persons = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			persons = JsonConvert.DeserializeObject<Person[]>(reader.ReadToEnd(), jsonSettings);
@@ -440,10 +440,10 @@ public class FaceManager : MonoBehaviour
 		
 		string sJsonContent = JsonConvert.SerializeObject(new { name = personName, userData = userData }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
 		
 		Person person = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
@@ -481,10 +481,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
 		
 		Person person = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
@@ -539,10 +539,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 		
 		PersonFace face = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			face = JsonConvert.DeserializeObject<PersonFace>(reader.ReadToEnd(), jsonSettings);
@@ -578,9 +578,9 @@ public class FaceManager : MonoBehaviour
 		
 		string sJsonContent = JsonConvert.SerializeObject(new { name = person.Name, userData = person.UserData }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "PATCH", "application/json", btContent, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PATCH", "application/json", btContent, headers, true, false);
 		
-		if(WebTools.IsErrorStatus(response))
+		if(CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 		}
@@ -604,9 +604,9 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "DELETE", "application/json", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "DELETE", "application/json", null, headers, true, false);
 		
-		if(WebTools.IsErrorStatus(response))
+		if(CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 		}
@@ -630,9 +630,9 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "", null, headers, true, false);
 		
-		if(WebTools.IsErrorStatus(response))
+		if(CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 			return false;
@@ -673,10 +673,10 @@ public class FaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "GET", "", null, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "", null, headers, true, false);
 		
 		TrainingStatus status = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			status = JsonConvert.DeserializeObject<TrainingStatus>(reader.ReadToEnd(), jsonSettings);
@@ -722,10 +722,10 @@ public class FaceManager : MonoBehaviour
 		
 		string sJsonContent = JsonConvert.SerializeObject(new { personGroupId = groupId, faceIds = faceIds, maxNumOfCandidatesReturned = maxCandidates }, jsonSettings);
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
-		HttpWebResponse response = WebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
 		
 		IdentifyResult[] results = null;
-		if(!WebTools.IsErrorStatus(response))
+		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			results = JsonConvert.DeserializeObject<IdentifyResult[]>(reader.ReadToEnd(), jsonSettings);
@@ -810,7 +810,7 @@ public class FaceManager : MonoBehaviour
 			}
 			else
 			{
-				throw new System.Exception("Error " + WebTools.GetStatusCode(response) + ": " + WebTools.GetStatusMessage(response) + "; Url: " + response.ResponseUri);
+				throw new System.Exception("Error " + CloudWebTools.GetStatusCode(response) + ": " + CloudWebTools.GetStatusMessage(response) + "; Url: " + response.ResponseUri);
 			}
 		}
 	}
