@@ -2,7 +2,7 @@
 using System.Collections;
 using System.IO;
 
-public class FaceDetection : MonoBehaviour 
+public class CloudFaceDetection : MonoBehaviour 
 {
 	[Tooltip("Image source used for getting face images.")]
 	public ImageSourceInterface imageSource;
@@ -180,59 +180,89 @@ public class FaceDetection : MonoBehaviour
 			SetHintText("Wait...");
 		}
 
-		yield return null;
-		
-		try 
-		{
+//		yield return null;
+//		
+//		try 
+//		{
 			// get the face manager instance
 			CloudFaceManager faceManager = CloudFaceManager.Instance;
 
 			if(texCamShot && faceManager)
 			{
-				faces = faceManager.DetectFaces(texCamShot);
+				//faces = faceManager.DetectFaces(texCamShot);
+				AsyncTask<Face[]> taskFace = faceManager.DetectFaces(texCamShot);
 
-				if(faces != null && faces.Length > 0)
+				while (taskFace.State == TaskState.Running)
 				{
-					// stick to detected face rectangles
-					FaceRectangle[] faceRects = new FaceRectangle[faces.Length];
+					yield return null;
+				}
 
-					for(int i = 0; i < faces.Length; i++)
-					{
-						faceRects[i] = faces[i].FaceRectangle;
-					}
+				if(string.IsNullOrEmpty(taskFace.ErrorMessage))
+				{
+					faces = taskFace.Result;
 
-					// get the emotions of the faces
-					if(recognizeEmotions)
+					if(faces != null && faces.Length > 0)
 					{
-						Emotion[] emotions = faceManager.RecognizeEmotions(texCamShot, faceRects);
-						int matched = faceManager.MatchEmotionsToFaces(ref faces, ref emotions);
-						
-						if(matched != faces.Length)
+						// stick to detected face rectangles
+						FaceRectangle[] faceRects = new FaceRectangle[faces.Length];
+
+						for(int i = 0; i < faces.Length; i++)
 						{
-							Debug.Log(string.Format("Matched {0}/{1} emotions to {2} faces.", matched, emotions.Length, faces.Length));
+							faceRects[i] = faces[i].FaceRectangle;
 						}
-					}
 
-					CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
-					SetHintText("Click on the camera image to make a shot");
+						// get the emotions of the faces
+						if(recognizeEmotions)
+						{
+							//Emotion[] emotions = faceManager.RecognizeEmotions(texCamShot, faceRects);
+							AsyncTask<Emotion[]> taskEmot = faceManager.RecognizeEmotions(texCamShot, faceRects);
+							
+							while (taskEmot.State == TaskState.Running)
+							{
+								yield return null;
+							}
+							
+							if(string.IsNullOrEmpty(taskEmot.ErrorMessage))
+							{
+								Emotion[] emotions = taskEmot.Result;
+								int matched = faceManager.MatchEmotionsToFaces(ref faces, ref emotions);
+
+								if(matched != faces.Length)
+								{
+									Debug.Log(string.Format("Matched {0}/{1} emotions to {2} faces.", matched, emotions.Length, faces.Length));
+								}
+							}
+							else
+							{
+								SetHintText(taskEmot.ErrorMessage);
+							}
+						}
+
+						CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
+						SetHintText("Click on the camera image to make a shot");
+					}
+					else
+					{
+						SetHintText("No faces detected.");
+					}
 				}
 				else
 				{
-					SetHintText("No faces detected.");
+					SetHintText(taskFace.ErrorMessage);
 				}
 			}
 			else
 			{
 				SetHintText("Check if the FaceManager component exists in the scene.");
 			}
-		} 
-		catch (System.Exception ex) 
-		{
-			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
-			SetHintText(ex.Message);
-		}
-
-		yield return null;
+//		} 
+//		catch (System.Exception ex) 
+//		{
+//			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
+//			SetHintText(ex.Message);
+//		}
+//
+//		yield return null;
 	}
 
 	void OnGUI()

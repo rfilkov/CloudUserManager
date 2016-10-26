@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using System;
 
 public class CloudUserManager : MonoBehaviour 
@@ -19,6 +20,9 @@ public class CloudUserManager : MonoBehaviour
 
 	// the person group object
 	private PersonGroup personGroup = null;
+
+	private const int threadWaitLoops = 25;  // 25 * 200ms = 5.0s
+	private const int threadWaitMs = 200;
 
 	private static CloudUserManager instance = null;
 	private bool isInitialized = false;
@@ -194,7 +198,16 @@ public class CloudUserManager : MonoBehaviour
 
 		if(faceManager != null)
 		{
-			faces = faceManager.DetectFaces(imageBytes);
+			//faces = faceManager.DetectFaces(imageBytes);
+			AsyncTask<Face[]> task = faceManager.DetectFaces(imageBytes);
+
+			while (task.State == TaskState.Running)
+			{
+				//yield return null;
+				Thread.Sleep(threadWaitMs);
+			}
+
+			faces = task.Result;
 
 			// get the training status
 			TrainingStatus training = faceManager.GetPersonGroupTrainingStatus(userGroupId);

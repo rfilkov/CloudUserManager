@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 
-public class UserRecognizer : MonoBehaviour 
+public class CloudUserRecognizer : MonoBehaviour 
 {
 	[Tooltip("Image source used for getting face images.")]
 	public ImageSourceInterface imageSource;

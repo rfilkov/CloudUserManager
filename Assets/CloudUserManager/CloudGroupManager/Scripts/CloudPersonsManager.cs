@@ -7,7 +7,7 @@ using System;
 using UnityEngine.EventSystems;
 using System.Linq;
 
-public class PersonsManager : MonoBehaviour 
+public class CloudPersonsManager : MonoBehaviour 
 {
     public GameObject personsListPanel;
     public GameObject personDetailsPanel;

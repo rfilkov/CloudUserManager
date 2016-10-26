@@ -1,12 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
 using System.Text;
 using System;
 using System.Net;
 using System.IO;
+using System.Threading;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
 
 
 public class CloudFaceManager : MonoBehaviour 
@@ -19,6 +20,9 @@ public class CloudFaceManager : MonoBehaviour
 
 	private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
 	private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
+
+	private const int threadWaitLoops = 25;  // 25 * 200ms = 5.0s
+	private const int threadWaitMs = 200;
 
 	private static CloudFaceManager instance = null;
 	private bool isInitialized = false;
@@ -64,7 +68,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// </summary>
 	/// <returns>List of detected faces.</returns>
 	/// <param name="texImage">Image texture.</param>
-	public Face[] DetectFaces(Texture2D texImage)
+	public AsyncTask<Face[]> DetectFaces(Texture2D texImage)
 	{
 		if(texImage == null)
 			return null;
@@ -79,33 +83,39 @@ public class CloudFaceManager : MonoBehaviour
 	/// </summary>
 	/// <returns>List of detected faces.</returns>
 	/// <param name="imageBytes">Image bytes.</param>
-	public Face[] DetectFaces(byte[] imageBytes)
+	public AsyncTask<Face[]> DetectFaces(byte[] imageBytes)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
-		{
-			throw new Exception("The face-subscription key is not set.");
-		}
+		AsyncTask<Face[]> task = new AsyncTask<Face[]>(() => {
+			if(string.IsNullOrEmpty(faceSubscriptionKey))
+			{
+				throw new Exception("The face-subscription key is not set.");
+			}
 
-		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
-		                                  FaceServiceHost, true, false, "age,gender,smile,headPose");
-		
-		Dictionary<string, string> headers = new Dictionary<string, string>();
-		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
-		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
-		
-		Face[] faces = null;
-		if(!CloudWebTools.IsErrorStatus(response))
-		{
-			StreamReader reader = new StreamReader(response.GetResponseStream());
-			faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
-		}
-		else
-		{
-			ProcessFaceError(response);
-		}
-		
-		return faces;
+			string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
+				FaceServiceHost, true, false, "age,gender,smile,headPose");
+
+			Dictionary<string, string> headers = new Dictionary<string, string>();
+			headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+
+			HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+
+			Face[] faces = null;
+			if(!CloudWebTools.IsErrorStatus(response))
+			{
+				StreamReader reader = new StreamReader(response.GetResponseStream());
+				faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
+			}
+			else
+			{
+				ProcessFaceError(response);
+			}
+
+			return faces;
+		});
+
+		task.Start();
+
+		return task;
 	}
 
 
@@ -115,7 +125,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The array of recognized emotions.</returns>
 	/// <param name="texImage">Image texture.</param>
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
-	public Emotion[] RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
+	public AsyncTask<Emotion[]> RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
 	{
 		if(texImage == null)
 			return null;
@@ -131,43 +141,49 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The array of recognized emotions.</returns>
 	/// <param name="imageBytes">Image bytes.</param>
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
-	public Emotion[] RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
+	public AsyncTask<Emotion[]> RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
 	{
-		if(string.IsNullOrEmpty(emotionSubscriptionKey))
-		{
-			throw new Exception("The emotion-subscription key is not set.");
-		}
-		
-		StringBuilder faceRectsStr = new StringBuilder();
-		if(faceRects != null)
-		{
-			foreach(FaceRectangle rect in faceRects)
+		AsyncTask<Emotion[]> task = new AsyncTask<Emotion[]>(() => {
+			if(string.IsNullOrEmpty(emotionSubscriptionKey))
 			{
-				faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.Left, rect.Top, rect.Width, rect.Height);
+				throw new Exception("The emotion-subscription key is not set.");
 			}
-			
-			faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
-		}
-		
-		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
-		
-		Dictionary<string, string> headers = new Dictionary<string, string>();
-		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
-		
-		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
-		
-		Emotion[] emotions = null;
-		if(!CloudWebTools.IsErrorStatus(response))
-		{
-			StreamReader reader = new StreamReader(response.GetResponseStream());
-			emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
-		}
-		else
-		{
-			ProcessFaceError(response);
-		}
-		
-		return emotions;
+
+			StringBuilder faceRectsStr = new StringBuilder();
+			if(faceRects != null)
+			{
+				foreach(FaceRectangle rect in faceRects)
+				{
+					faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.Left, rect.Top, rect.Width, rect.Height);
+				}
+
+				faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
+			}
+
+			string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
+
+			Dictionary<string, string> headers = new Dictionary<string, string>();
+			headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
+
+			HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+
+			Emotion[] emotions = null;
+			if(!CloudWebTools.IsErrorStatus(response))
+			{
+				StreamReader reader = new StreamReader(response.GetResponseStream());
+				emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
+			}
+			else
+			{
+				ProcessFaceError(response);
+			}
+
+			return emotions;
+		});
+
+		task.Start();
+
+		return task;
 	}
 	
 	
