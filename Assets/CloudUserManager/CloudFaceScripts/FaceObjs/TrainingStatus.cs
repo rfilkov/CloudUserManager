@@ -24,18 +24,17 @@ public enum Status
 /// <summary>
 /// The training status entity.
 /// </summary>
+[Serializable]
 public class TrainingStatus
 {
+	
     /// <summary>
     /// Gets or sets the status.
     /// </summary>
     /// <value>
     /// The status.
     /// </value>
-    public Status Status
-    {
-        get; set;
-    }
+	public Status status;
 
     /// <summary>
     /// Gets or sets the create time.
@@ -43,10 +42,7 @@ public class TrainingStatus
     /// <value>
     /// The create time.
     /// </value>
-    public DateTime CreatedDateTime
-    {
-        get; set;
-    }
+	public DateTime createdDateTime;
 
     /// <summary>
     /// Gets or sets the last action time.
@@ -54,10 +50,7 @@ public class TrainingStatus
     /// <value>
     /// The last action time.
     /// </value>
-    public DateTime LastActionDateTime
-    {
-        get; set;
-    }
+	public DateTime lastActionDateTime;
 
     /// <summary>
     /// Gets or sets the message.
@@ -65,9 +58,7 @@ public class TrainingStatus
     /// <value>
     /// The message.
     /// </value>
-    public string Message
-    {
-        get; set;
-    }
+	public string message;
+
 }
 

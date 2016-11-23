@@ -3,19 +3,17 @@
 /// <summary>
 /// The person face entity.
 /// </summary>
+[Serializable]
 public class PersonFace
 {
+	
     /// <summary>
     /// Gets or sets the persisted face identifier.
     /// </summary>
     /// <value>
     /// The persisted face identifier.
     /// </value>
-    public Guid PersistedFaceId
-    {
-        get;
-        set;
-    }
+	public string persistedFaceId;
 
     /// <summary>
     /// Gets or sets the user data.
@@ -23,9 +21,7 @@ public class PersonFace
     /// <value>
     /// The user data.
     /// </value>
-    public string UserData
-    {
-        get; set;
-    }
+	public string userData;
+
 }
 

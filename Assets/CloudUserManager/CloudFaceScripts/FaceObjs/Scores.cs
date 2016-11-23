@@ -2,47 +2,49 @@
 using System.Collections.Generic;
 
 
+[Serializable]
 public class Scores
 {
     /// <summary>
     /// 
     /// </summary>
-    public float Anger { get; set; }
+	public float anger;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Contempt { get; set; }
+	public float contempt;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Disgust { get; set; }
+	public float disgust;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Fear { get; set; }
+	public float fear;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Happiness { get; set; }
+	public float happiness;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Neutral { get; set; }
+	public float neutral;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Sadness { get; set; }
+	public float sadness;
 
     /// <summary>
     /// 
     /// </summary>
-    public float Surprise { get; set; }
+	public float surprise;
+
 
     public override bool Equals(object o)
     {
@@ -51,24 +53,24 @@ public class Scores
         var other = o as Scores;
         if (other == null) return false;
 
-        return this.Anger == other.Anger &&
-            this.Disgust == other.Disgust &&
-            this.Fear == other.Fear &&
-            this.Happiness == other.Happiness &&
-            this.Neutral == other.Neutral &&
-            this.Sadness == other.Sadness &&
-            this.Surprise == other.Surprise;
+        return this.anger == other.anger &&
+            this.disgust == other.disgust &&
+            this.fear == other.fear &&
+            this.happiness == other.happiness &&
+            this.neutral == other.neutral &&
+            this.sadness == other.sadness &&
+            this.surprise == other.surprise;
     }
 
     public override int GetHashCode()
     {
-        return Anger.GetHashCode() ^
-            Disgust.GetHashCode() ^
-            Fear.GetHashCode() ^
-            Happiness.GetHashCode() ^
-            Neutral.GetHashCode() ^
-            Sadness.GetHashCode() ^
-            Surprise.GetHashCode();
+        return anger.GetHashCode() ^
+            disgust.GetHashCode() ^
+            fear.GetHashCode() ^
+            happiness.GetHashCode() ^
+            neutral.GetHashCode() ^
+            sadness.GetHashCode() ^
+            surprise.GetHashCode();
     }
 }
 

@@ -1,18 +1,19 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// The face attributes class that holds Age/Gender/Head Pose/Smile/Facial Hair information.
 /// </summary>
+[Serializable]
 public class FaceAttributes
 {
+	
     /// <summary>
     /// Gets or sets the age value.
     /// </summary>
     /// <value>
     /// The age value.
     /// </value>
-    public float Age
-    {
-        get; set;
-    }
+	public float age;
 
     /// <summary>
     /// Gets or sets the gender.
@@ -20,10 +21,7 @@ public class FaceAttributes
     /// <value>
     /// The gender.
     /// </value>
-    public string Gender
-    {
-        get; set;
-    }
+	public string gender;
 
     /// <summary>
     /// Gets or sets the head pose.
@@ -31,10 +29,7 @@ public class FaceAttributes
     /// <value>
     /// The head pose.
     /// </value>
-    public HeadPose HeadPose
-    {
-        get; set;
-    }
+	public HeadPose headPose;
 
     /// <summary>
     /// Gets or sets the smile value. Represents the confidence of face is smiling.
@@ -42,10 +37,7 @@ public class FaceAttributes
     /// <value>
     /// The smile value.
     /// </value>
-    public float Smile
-    {
-        get; set;
-    }
+	public float smile;
 
     /// <summary>
     /// Gets or sets the facial hair.
@@ -53,9 +45,6 @@ public class FaceAttributes
     /// <value>
     /// The facial hair.
     /// </value>
-    public FacialHair FacialHair
-    {
-        get; set;
-    }
+	public FacialHair facialHair;
 
 }

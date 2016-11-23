@@ -145,10 +145,10 @@ public class CloudUserRecognizer : MonoBehaviour
 					Color guiColor = GUI.color;
 					GUI.color = faceColor;
 
-					if(face.Candidate != null && face.Candidate.Person != null)
+					if(face.candidate != null && face.candidate.person != null)
 					{
 						//GUILayout.Label(string.Format("{0} face: {1}", faceColorName, face.Candidate.Person.Name));
-						GUILayout.Label(string.Format("{0}", face.Candidate.Person.Name));
+						GUILayout.Label(string.Format("{0}", face.candidate.person.name));
 					}
 					else
 					{
@@ -316,46 +316,60 @@ public class CloudUserRecognizer : MonoBehaviour
 		
 		yield return null;
 		
-		try 
+		// get the user manager instance
+		CloudUserManager userManager = CloudUserManager.Instance;
+		
+		if(texCamShot && userManager)
 		{
-			// get the user manager instance
-			CloudUserManager userManager = CloudUserManager.Instance;
-			
-			if(texCamShot && userManager)
+			byte[] imageBytes = texCamShot.EncodeToJPG();
+			yield return null;
+
+			AsyncTask<bool> task = new AsyncTask<bool>(() => {
+				bool bSuccess = userManager.IdentifyUsers(imageBytes, ref faces, ref results);
+				return bSuccess;
+			});
+
+			task.Start();
+			yield return null;
+
+			while (task.State == TaskState.Running)
 			{
-				if(userManager.IdentifyUsers(texCamShot, ref faces, ref results))
+				yield return null;
+			}
+
+			if(!string.IsNullOrEmpty(task.ErrorMessage))
+			{
+				Debug.LogError(task.ErrorMessage);
+
+				if(hintText)
 				{
-					// draw face rects
-					CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
-					
-					if(hintText)
-					{
-						hintText.text = "Press Space or Ctrl to return.";
-					}
+					hintText.text = task.ErrorMessage;
 				}
-				else
+			}
+			else if(task.Result)
+			{
+				// draw face rects
+				CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
+				yield return null;
+				
+				if(hintText)
 				{
-					if(hintText)
-					{
-						hintText.text = "No users detected.";
-					}
+					hintText.text = "Press Space or Ctrl to return.";
 				}
 			}
 			else
 			{
 				if(hintText)
 				{
-					hintText.text = "Check if the FaceManager and UserGroupManagers component exist in the scene.";
+					hintText.text = "No users detected.";
 				}
 			}
-		} 
-		catch (System.Exception ex) 
+		}
+		else
 		{
-			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
-
 			if(hintText)
 			{
-				hintText.text = ex.Message;
+				hintText.text = "Check if the CloudFaceManager and CloudUserManager components exist in the scene.";
 			}
 		}
 		
@@ -380,71 +394,77 @@ public class CloudUserRecognizer : MonoBehaviour
 		
 		yield return null;
 		
-		try 
+		CloudUserManager userManager = CloudUserManager.Instance;
+		
+		if(texCamShot && userManager && face != null && userName != string.Empty)
 		{
-			CloudUserManager userManager = CloudUserManager.Instance;
-			
-			if(texCamShot && userManager && face != null && userName != string.Empty)
+			FaceRectangle faceRect = face.faceRectangle;
+			byte[] imageBytes = texCamShot.EncodeToJPG();
+			yield return null;
+
+			AsyncTask<Person> task = new AsyncTask<Person>(() => {
+				return userManager.AddUserToGroup(userName, string.Empty, imageBytes, faceRect);
+			});
+
+			task.Start();
+			yield return null;
+
+			while (task.State == TaskState.Running)
 			{
-				FaceRectangle faceRect = face.FaceRectangle;
-				Person person = userManager.AddUserToGroup(userName, string.Empty, texCamShot, faceRect);
+				yield return null;
+			}
 
-				if(person != null && person.PersistedFaceIds != null && person.PersistedFaceIds.Length > 0)
+			// get the resulting person
+			Person person = task.Result;
+
+			if(!string.IsNullOrEmpty(task.ErrorMessage))
+			{
+				Debug.LogError(task.ErrorMessage);
+
+				if(hintText)
 				{
-					Guid faceId = face.FaceId;
-					bool bFaceFound = false;
-
-					for(int i = 0; i < faces.Length; i++)
-					{
-						if(faces[i].FaceId == faceId)
-						{
-							if(faces[i].Candidate == null)
-							{
-								faces[i].Candidate = new Candidate();
-
-								faces[i].Candidate.PersonId = person.PersonId;
-								faces[i].Candidate.Confidence = 1f;
-								faces[i].Candidate.Person = person;
-							}
-
-							bFaceFound = true;
-							break;
-						}
-					}
-
-					if(!bFaceFound)
-					{
-						Debug.Log(string.Format("Face {0} not found.", faceId));
-					}
-
-					if(hintText != null)
-					{
-						hintText.text = string.Format("User '{0}' created successfully.", userName);
-					}
-				}
-				else
-				{
-					if(hintText != null)
-					{
-						hintText.text = "Face could not be added.";
-					}
+					hintText.text = task.ErrorMessage;
 				}
 			}
-//			else
-//			{
-//				if(hintText)
-//				{
-//					hintText.text = "Check if the FaceManager and UserGroupManagers component exist in the scene.";
-//				}
-//			}
-		} 
-		catch (Exception ex) 
-		{
-			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
-			
-			if(hintText != null)
+			else if(person != null && person.persistedFaceIds != null && person.persistedFaceIds.Length > 0)
 			{
-				hintText.text = ex.Message;
+				string faceId = face.faceId;
+				bool bFaceFound = false;
+
+				for(int i = 0; i < faces.Length; i++)
+				{
+					if(faces[i].faceId == faceId)
+					{
+						if(faces[i].candidate == null)
+						{
+							faces[i].candidate = new Candidate();
+
+							faces[i].candidate.personId = person.personId;
+							faces[i].candidate.confidence = 1f;
+							faces[i].candidate.person = person;
+						}
+
+						bFaceFound = true;
+						break;
+					}
+				}
+
+				if(!bFaceFound)
+				{
+					Debug.Log(string.Format("Face {0} not found.", faceId));
+				}
+
+				if(hintText != null)
+				{
+					hintText.text = string.Format("User '{0}' created successfully.", userName);
+				}
+			}
+			else
+			{
+				if(hintText != null)
+				{
+					hintText.text = "Face could not be added.";
+				}
 			}
 		}
 

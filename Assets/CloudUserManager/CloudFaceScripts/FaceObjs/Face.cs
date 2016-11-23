@@ -1,22 +1,26 @@
 ﻿using System;
 
+[Serializable]
+public class FaceCollection
+{
+	public Face[] faces;
+}
+
 
 /// <summary>
 /// The detected face entity.
 /// </summary>
+[Serializable]
 public class Face
 {
+	
     /// <summary>
     /// Gets or sets the face identifier.
     /// </summary>
     /// <value>
     /// The face identifier.
     /// </value>
-    public Guid FaceId
-    {
-        get;
-        set;
-    }
+	public string faceId;
 
     /// <summary>
     /// Gets or sets the face rectangle.
@@ -24,11 +28,7 @@ public class Face
     /// <value>
     /// The face rectangle.
     /// </value>
-    public FaceRectangle FaceRectangle
-    {
-        get;
-        set;
-    }
+	public FaceRectangle faceRectangle;
 
     /// <summary>
     /// Gets or sets the face landmarks.
@@ -36,11 +36,7 @@ public class Face
     /// <value>
     /// The face landmarks.
     /// </value>
-    public FaceLandmarks FaceLandmarks
-    {
-        get;
-        set;
-    }
+	public FaceLandmarks faceLandmarks;
 
     /// <summary>
     /// Gets or sets the face attributes.
@@ -48,29 +44,18 @@ public class Face
     /// <value>
     /// The face attributes.
     /// </value>
-    public FaceAttributes FaceAttributes
-    {
-        get;
-        set;
-    }
+	public FaceAttributes faceAttributes;
 
 	/// <summary>
 	/// Gets or sets the emotion.
 	/// </summary>
 	/// <value>The emotion.</value>
-	public Emotion Emotion
-	{
-		get;
-		set;
-	}
+	public Emotion emotion;
 
 	/// <summary>
 	/// Gets or sets the identified candidate.
 	/// </summary>
 	/// <value>The identified candidate.</value>
-	public Candidate Candidate
-	{
-		get;
-		set;
-	}
+	public Candidate candidate;
+
 }

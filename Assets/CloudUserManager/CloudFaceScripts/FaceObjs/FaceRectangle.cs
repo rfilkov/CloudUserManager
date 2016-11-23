@@ -1,18 +1,19 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// The face rectangle entity.
 /// </summary>
+[Serializable]
 public class FaceRectangle
 {
+	
     /// <summary>
     /// Gets or sets the width.
     /// </summary>
     /// <value>
     /// The width.
     /// </value>
-    public int Width
-    {
-        get; set;
-    }
+	public int width;
 
     /// <summary>
     /// Gets or sets the height.
@@ -20,10 +21,7 @@ public class FaceRectangle
     /// <value>
     /// The height.
     /// </value>
-    public int Height
-    {
-        get; set;
-    }
+	public int height;
 
     /// <summary>
     /// Gets or sets the left.
@@ -31,10 +29,7 @@ public class FaceRectangle
     /// <value>
     /// The left of the face rectangle.
     /// </value>
-    public int Left
-    {
-        get; set;
-    }
+	public int left;
 
     /// <summary>
     /// Gets or sets the top.
@@ -42,9 +37,7 @@ public class FaceRectangle
     /// <value>
     /// The top of the face rectangle.
     /// </value>
-    public int Top
-    {
-        get; set;
-    }
+	public int top;
+
 }
 

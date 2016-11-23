@@ -1,18 +1,20 @@
-﻿/// <summary>
+﻿using System;
+using UnityEngine;
+
+/// <summary>
 /// The face landmarks class.
 /// </summary>
+[Serializable]
 public class FaceLandmarks
 {
+	
     /// <summary>
     /// Gets or sets the pupil left.
     /// </summary>
     /// <value>
     /// The pupil left.
     /// </value>
-    public FeatureCoordinate PupilLeft
-    {
-        get; set;
-    }
+	public FeatureCoordinate pupilLeft;
 
     /// <summary>
     /// Gets or sets the pupil right.
@@ -20,21 +22,15 @@ public class FaceLandmarks
     /// <value>
     /// The pupil right.
     /// </value>
-    public FeatureCoordinate PupilRight
-    {
-        get; set;
-    }
+	public FeatureCoordinate pupilRight;
 
-    /// <summary>
+	/// <summary>
     /// Gets or sets the nose tip.
     /// </summary>
     /// <value>
     /// The nose tip.
     /// </value>
-    public FeatureCoordinate NoseTip
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseTip;
 
     /// <summary>
     /// Gets or sets the mouth left.
@@ -42,10 +38,7 @@ public class FaceLandmarks
     /// <value>
     /// The mouth left.
     /// </value>
-    public FeatureCoordinate MouthLeft
-    {
-        get; set;
-    }
+	public FeatureCoordinate mouthLeft;
 
     /// <summary>
     /// Gets or sets the mouth right.
@@ -53,10 +46,7 @@ public class FaceLandmarks
     /// <value>
     /// The mouth right.
     /// </value>
-    public FeatureCoordinate MouthRight
-    {
-        get; set;
-    }
+	public FeatureCoordinate mouthRight;
 
     /// <summary>
     /// Gets or sets the eyebrow left outer.
@@ -64,10 +54,7 @@ public class FaceLandmarks
     /// <value>
     /// The eyebrow left outer.
     /// </value>
-    public FeatureCoordinate EyebrowLeftOuter
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyebrowLeftOuter;
 
     /// <summary>
     /// Gets or sets the eyebrow left inner.
@@ -75,10 +62,7 @@ public class FaceLandmarks
     /// <value>
     /// The eyebrow left inner.
     /// </value>
-    public FeatureCoordinate EyebrowLeftInner
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyebrowLeftInner;
 
     /// <summary>
     /// Gets or sets the eye left outer.
@@ -86,10 +70,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye left outer.
     /// </value>
-    public FeatureCoordinate EyeLeftOuter
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeLeftOuter;
 
     /// <summary>
     /// Gets or sets the eye left top.
@@ -97,10 +78,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye left top.
     /// </value>
-    public FeatureCoordinate EyeLeftTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeLeftTop;
 
     /// <summary>
     /// Gets or sets the eye left bottom.
@@ -108,10 +86,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye left bottom.
     /// </value>
-    public FeatureCoordinate EyeLeftBottom
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeLeftBottom;
 
     /// <summary>
     /// Gets or sets the eye left inner.
@@ -119,10 +94,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye left inner.
     /// </value>
-    public FeatureCoordinate EyeLeftInner
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeLeftInner;
 
     /// <summary>
     /// Gets or sets the eyebrow right inner.
@@ -130,10 +102,7 @@ public class FaceLandmarks
     /// <value>
     /// The eyebrow right inner.
     /// </value>
-    public FeatureCoordinate EyebrowRightInner
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyebrowRightInner;
 
     /// <summary>
     /// Gets or sets the eyebrow right outer.
@@ -141,10 +110,7 @@ public class FaceLandmarks
     /// <value>
     /// The eyebrow right outer.
     /// </value>
-    public FeatureCoordinate EyebrowRightOuter
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyebrowRightOuter;
 
     /// <summary>
     /// Gets or sets the eye right inner.
@@ -152,10 +118,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye right inner.
     /// </value>
-    public FeatureCoordinate EyeRightInner
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeRightInner;
 
     /// <summary>
     /// Gets or sets the eye right top.
@@ -163,10 +126,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye right top.
     /// </value>
-    public FeatureCoordinate EyeRightTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeRightTop;
 
     /// <summary>
     /// Gets or sets the eye right bottom.
@@ -174,10 +134,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye right bottom.
     /// </value>
-    public FeatureCoordinate EyeRightBottom
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeRightBottom;
 
     /// <summary>
     /// Gets or sets the eye right outer.
@@ -185,10 +142,7 @@ public class FaceLandmarks
     /// <value>
     /// The eye right outer.
     /// </value>
-    public FeatureCoordinate EyeRightOuter
-    {
-        get; set;
-    }
+	public FeatureCoordinate eyeRightOuter;
 
     /// <summary>
     /// Gets or sets the nose root left.
@@ -196,10 +150,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose root left.
     /// </value>
-    public FeatureCoordinate NoseRootLeft
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseRootLeft;
 
     /// <summary>
     /// Gets or sets the nose root right.
@@ -207,10 +158,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose root right.
     /// </value>
-    public FeatureCoordinate NoseRootRight
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseRootRight;
 
     /// <summary>
     /// Gets or sets the nose left alar top.
@@ -218,10 +166,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose left alar top.
     /// </value>
-    public FeatureCoordinate NoseLeftAlarTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseLeftAlarTop;
 
     /// <summary>
     /// Gets or sets the nose right alar top.
@@ -229,10 +174,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose right alar top.
     /// </value>
-    public FeatureCoordinate NoseRightAlarTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseRightAlarTop;
 
     /// <summary>
     /// Gets or sets the nose left alar out tip.
@@ -240,10 +182,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose left alar out tip.
     /// </value>
-    public FeatureCoordinate NoseLeftAlarOutTip
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseLeftAlarOutTip;
 
     /// <summary>
     /// Gets or sets the nose right alar out tip.
@@ -251,10 +190,7 @@ public class FaceLandmarks
     /// <value>
     /// The nose right alar out tip.
     /// </value>
-    public FeatureCoordinate NoseRightAlarOutTip
-    {
-        get; set;
-    }
+	public FeatureCoordinate noseRightAlarOutTip;
 
     /// <summary>
     /// Gets or sets the upper lip top.
@@ -262,10 +198,7 @@ public class FaceLandmarks
     /// <value>
     /// The upper lip top.
     /// </value>
-    public FeatureCoordinate UpperLipTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate upperLipTop;
 
     /// <summary>
     /// Gets or sets the upper lip bottom.
@@ -273,10 +206,7 @@ public class FaceLandmarks
     /// <value>
     /// The upper lip bottom.
     /// </value>
-    public FeatureCoordinate UpperLipBottom
-    {
-        get; set;
-    }
+	public FeatureCoordinate upperLipBottom;
 
     /// <summary>
     /// Gets or sets the under lip top.
@@ -284,10 +214,7 @@ public class FaceLandmarks
     /// <value>
     /// The under lip top.
     /// </value>
-    public FeatureCoordinate UnderLipTop
-    {
-        get; set;
-    }
+	public FeatureCoordinate underLipTop;
 
     /// <summary>
     /// Gets or sets the under lip bottom.
@@ -295,10 +222,7 @@ public class FaceLandmarks
     /// <value>
     /// The under lip bottom.
     /// </value>
-    public FeatureCoordinate UnderLipBottom
-    {
-        get; set;
-    }
+	public FeatureCoordinate underLipBottom;
 
 }
 

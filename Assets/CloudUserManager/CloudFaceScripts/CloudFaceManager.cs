@@ -6,8 +6,8 @@ using System;
 using System.Net;
 using System.IO;
 using System.Threading;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
+//using Newtonsoft.Json.Serialization;
+//using Newtonsoft.Json;
 
 
 public class CloudFaceManager : MonoBehaviour 
@@ -68,7 +68,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// </summary>
 	/// <returns>List of detected faces.</returns>
 	/// <param name="texImage">Image texture.</param>
-	public AsyncTask<Face[]> DetectFaces(Texture2D texImage)
+	public Face[] DetectFaces(Texture2D texImage)
 	{
 		if(texImage == null)
 			return null;
@@ -83,39 +83,36 @@ public class CloudFaceManager : MonoBehaviour
 	/// </summary>
 	/// <returns>List of detected faces.</returns>
 	/// <param name="imageBytes">Image bytes.</param>
-	public AsyncTask<Face[]> DetectFaces(byte[] imageBytes)
+	public Face[] DetectFaces(byte[] imageBytes)
 	{
-		AsyncTask<Face[]> task = new AsyncTask<Face[]>(() => {
-			if(string.IsNullOrEmpty(faceSubscriptionKey))
-			{
-				throw new Exception("The face-subscription key is not set.");
-			}
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		{
+			throw new Exception("The face-subscription key is not set.");
+		}
 
-			string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
-				FaceServiceHost, true, false, "age,gender,smile,headPose");
+		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
+			FaceServiceHost, true, false, "age,gender,smile,headPose");
 
-			Dictionary<string, string> headers = new Dictionary<string, string>();
-			headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 
-			HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 
-			Face[] faces = null;
-			if(!CloudWebTools.IsErrorStatus(response))
-			{
-				StreamReader reader = new StreamReader(response.GetResponseStream());
-				faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
-			}
-			else
-			{
-				ProcessFaceError(response);
-			}
+		Face[] faces = null;
+		if(!CloudWebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			//faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
+			string newJson = "{ \"faces\": " + reader.ReadToEnd() + "}";
+			FaceCollection facesCollection = JsonUtility.FromJson<FaceCollection>(newJson);
+			faces = facesCollection.faces;
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
 
-			return faces;
-		});
-
-		task.Start();
-
-		return task;
+		return faces;
 	}
 
 
@@ -125,7 +122,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The array of recognized emotions.</returns>
 	/// <param name="texImage">Image texture.</param>
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
-	public AsyncTask<Emotion[]> RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
+	public Emotion[] RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
 	{
 		if(texImage == null)
 			return null;
@@ -141,49 +138,46 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The array of recognized emotions.</returns>
 	/// <param name="imageBytes">Image bytes.</param>
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
-	public AsyncTask<Emotion[]> RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
+	public Emotion[] RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
 	{
-		AsyncTask<Emotion[]> task = new AsyncTask<Emotion[]>(() => {
-			if(string.IsNullOrEmpty(emotionSubscriptionKey))
+		if(string.IsNullOrEmpty(emotionSubscriptionKey))
+		{
+			throw new Exception("The emotion-subscription key is not set.");
+		}
+
+		StringBuilder faceRectsStr = new StringBuilder();
+		if(faceRects != null)
+		{
+			foreach(FaceRectangle rect in faceRects)
 			{
-				throw new Exception("The emotion-subscription key is not set.");
+				faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.left, rect.top, rect.width, rect.height);
 			}
 
-			StringBuilder faceRectsStr = new StringBuilder();
-			if(faceRects != null)
-			{
-				foreach(FaceRectangle rect in faceRects)
-				{
-					faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.Left, rect.Top, rect.Width, rect.Height);
-				}
+			faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
+		}
 
-				faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
-			}
+		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
 
-			string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
+		Dictionary<string, string> headers = new Dictionary<string, string>();
+		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
 
-			Dictionary<string, string> headers = new Dictionary<string, string>();
-			headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
+		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 
-			HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
+		Emotion[] emotions = null;
+		if(!CloudWebTools.IsErrorStatus(response))
+		{
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			//emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
+			string newJson = "{ \"emotions\": " + reader.ReadToEnd() + "}";
+			EmotionCollection emotionCollection = JsonUtility.FromJson<EmotionCollection>(newJson);
+			emotions = emotionCollection.emotions;
+		}
+		else
+		{
+			ProcessFaceError(response);
+		}
 
-			Emotion[] emotions = null;
-			if(!CloudWebTools.IsErrorStatus(response))
-			{
-				StreamReader reader = new StreamReader(response.GetResponseStream());
-				emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
-			}
-			else
-			{
-				ProcessFaceError(response);
-			}
-
-			return emotions;
-		});
-
-		task.Start();
-
-		return task;
+		return emotions;
 	}
 	
 	
@@ -201,14 +195,14 @@ public class CloudFaceManager : MonoBehaviour
 		
 		foreach(Emotion emot in emotions)
 		{
-			FaceRectangle emotRect = emot.FaceRectangle;
+			FaceRectangle emotRect = emot.faceRectangle;
 			
 			for(int i = 0; i < faces.Length; i++)
 			{
-				if(Mathf.Abs(emotRect.Left - faces[i].FaceRectangle.Left) <= 2 &&
-				   Mathf.Abs(emotRect.Top - faces[i].FaceRectangle.Top) <= 2)
+				if(Mathf.Abs(emotRect.left - faces[i].faceRectangle.left) <= 2 &&
+				   Mathf.Abs(emotRect.top - faces[i].faceRectangle.top) <= 2)
 				{
-					faces[i].Emotion = emot;
+					faces[i].emotion = emot;
 					matched++;
 					break;
 				}
@@ -226,20 +220,28 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="emotion">Emotion.</param>
 	public static string GetEmotionScoresAsString(Emotion emotion)
 	{
-		if(emotion == null || emotion.Scores == null)
+		if(emotion == null || emotion.scores == null)
 			return string.Empty;
 		
-		Scores es = emotion.Scores; 
+		Scores es = emotion.scores; 
 		StringBuilder emotStr = new StringBuilder();
 		
-		if(es.Anger >= 0.01f) emotStr.AppendFormat(" {0:F0}% angry,", es.Anger * 100f);
-		if(es.Contempt >= 0.01f) emotStr.AppendFormat(" {0:F0}% contemptuous,", es.Contempt * 100f);
-		if(es.Disgust >= 0.01f) emotStr.AppendFormat(" {0:F0}% disgusted,", es.Disgust * 100f);
-		if(es.Fear >= 0.01f) emotStr.AppendFormat(" {0:F0}% scared,", es.Fear * 100f);
-		if(es.Happiness >= 0.01f) emotStr.AppendFormat(" {0:F0}% happy,", es.Happiness * 100f);
-		if(es.Neutral >= 0.01f) emotStr.AppendFormat(" {0:F0}% neutral,", es.Neutral * 100f);
-		if(es.Sadness >= 0.01f) emotStr.AppendFormat(" {0:F0}% sad,", es.Sadness * 100f);
-		if(es.Surprise >= 0.01f) emotStr.AppendFormat(" {0:F0}% surprised,", es.Surprise * 100f);
+		if(es.anger >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% angry,", es.anger * 100f);
+		if(es.contempt >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% contemptuous,", es.contempt * 100f);
+		if(es.disgust >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% disgusted,", es.disgust * 100f);
+		if(es.fear >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% scared,", es.fear * 100f);
+		if(es.happiness >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% happy,", es.happiness * 100f);
+		if(es.neutral >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% neutral,", es.neutral * 100f);
+		if(es.sadness >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% sad,", es.sadness * 100f);
+		if(es.surprise >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% surprised,", es.surprise * 100f);
 		
 		if(emotStr.Length > 0)
 		{
@@ -259,19 +261,27 @@ public class CloudFaceManager : MonoBehaviour
 	public static List<string> GetEmotionScoresList(Emotion emotion)
 	{
 		List<string> alScores = new List<string>();
-		if(emotion == null || emotion.Scores == null)
+		if(emotion == null || emotion.scores == null)
 			return alScores;
 		
-		Scores es = emotion.Scores; 
+		Scores es = emotion.scores; 
 		
-		if(es.Anger >= 0.01f) alScores.Add(string.Format("{0:F0}% angry", es.Anger * 100f));
-		if(es.Contempt >= 0.01f) alScores.Add(string.Format("{0:F0}% contemptuous", es.Contempt * 100f));
-		if(es.Disgust >= 0.01f) alScores.Add(string.Format("{0:F0}% disgusted,", es.Disgust * 100f));
-		if(es.Fear >= 0.01f) alScores.Add(string.Format("{0:F0}% scared", es.Fear * 100f));
-		if(es.Happiness >= 0.01f) alScores.Add(string.Format("{0:F0}% happy", es.Happiness * 100f));
-		if(es.Neutral >= 0.01f) alScores.Add(string.Format("{0:F0}% neutral", es.Neutral * 100f));
-		if(es.Sadness >= 0.01f) alScores.Add(string.Format("{0:F0}% sad", es.Sadness * 100f));
-		if(es.Surprise >= 0.01f) alScores.Add(string.Format("{0:F0}% surprised", es.Surprise * 100f));
+		if(es.anger >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% angry", es.anger * 100f));
+		if(es.contempt >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% contemptuous", es.contempt * 100f));
+		if(es.disgust >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% disgusted,", es.disgust * 100f));
+		if(es.fear >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% scared", es.fear * 100f));
+		if(es.happiness >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% happy", es.happiness * 100f));
+		if(es.neutral >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% neutral", es.neutral * 100f));
+		if(es.sadness >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% sad", es.sadness * 100f));
+		if(es.surprise >= 0.01f) 
+			alScores.Add(string.Format("{0:F0}% surprised", es.surprise * 100f));
 		
 		return alScores;
 	}
@@ -318,7 +328,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// Draws the face rectacgles in the given texture.
 	/// </summary>
 	/// <param name="faces">List of faces.</param>
-	/// <param name="tex">Tex.</param>
+	/// <param name="tex">The camera shot texture</param>
 	public static void DrawFaceRects(Texture2D tex, Face[] faces, Color[] faceColors)
 	{
 		for(int i = 0; i < faces.Length; i++)
@@ -326,11 +336,31 @@ public class CloudFaceManager : MonoBehaviour
 			Face face = faces[i];
 			Color faceColor = faceColors[i % faceColors.Length];
 			
-			FaceRectangle rect = face.FaceRectangle;
-			CloudTexTools.DrawRect(tex, rect.Left, rect.Top, rect.Width, rect.Height, faceColor);
+			FaceRectangle rect = face.faceRectangle;
+			CloudTexTools.DrawRect(tex, rect.left, rect.top, rect.width, rect.height, faceColor);
 		}
 		
 		tex.Apply();
+	}
+
+
+	/// <summary>
+	/// Gets the face-only texture from the given texture.
+	/// </summary>
+	/// <returns>The face texture.</returns>
+	/// <param name="tex">The camera shot texture</param>
+	/// <param name="face">The detected face</param>
+	public static Texture2D GetFaceTexture(Texture2D tex, Face face)
+	{
+		if(tex != null && face != null)
+		{
+			FaceRectangle rect = face.faceRectangle;
+			int texY = tex.height - rect.top - rect.height;
+
+			return CloudTexTools.GetTexturePart(tex, rect.left, texY, rect.width, rect.height);
+		}
+
+		return null;
 	}
 	
 
@@ -353,7 +383,8 @@ public class CloudFaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 
-		string sJsonContent = JsonConvert.SerializeObject(new { name = groupName, userData = userData }, jsonSettings);
+		//string sJsonContent = JsonConvert.SerializeObject(new { name = groupName, userData = userData }, jsonSettings);
+		string sJsonContent = JsonUtility.ToJson(new PersonGroupRequest(groupName, userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
 		
@@ -390,7 +421,8 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			group = JsonConvert.DeserializeObject<PersonGroup>(reader.ReadToEnd(), jsonSettings);
+			//group = JsonConvert.DeserializeObject<PersonGroup>(reader.ReadToEnd(), jsonSettings);
+			group = JsonUtility.FromJson<PersonGroup>(reader.ReadToEnd());
 		}
 		else
 		{
@@ -424,7 +456,10 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			persons = JsonConvert.DeserializeObject<Person[]>(reader.ReadToEnd(), jsonSettings);
+			//persons = JsonConvert.DeserializeObject<Person[]>(reader.ReadToEnd(), jsonSettings);
+			string newJson = "{ \"persons\": " + reader.ReadToEnd() + "}";
+			PersonCollection personColl = JsonUtility.FromJson<PersonCollection>(newJson);
+			persons = personColl.persons;
 		}
 		else
 		{
@@ -454,7 +489,7 @@ public class CloudFaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		string sJsonContent = JsonConvert.SerializeObject(new { name = personName, userData = userData }, jsonSettings);
+		string sJsonContent = JsonUtility.ToJson(new PersonRequest(personName, userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
 		
@@ -462,12 +497,12 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
+			person = JsonUtility.FromJson<Person>(reader.ReadToEnd());
 
 			//if(person.PersonId != null)
 			{
-				person.Name = personName;
-				person.UserData = userData;
+				person.name = personName;
+				person.userData = userData;
 			}
 		}
 		else
@@ -503,7 +538,7 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			person = JsonConvert.DeserializeObject<Person>(reader.ReadToEnd(), jsonSettings);
+			person = JsonUtility.FromJson<Person>(reader.ReadToEnd());
 		}
 		else
 		{
@@ -549,7 +584,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 
-		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.Left, faceRect.Top, faceRect.Width, faceRect.Height) : string.Empty;
+		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.left, faceRect.top, faceRect.width, faceRect.height) : string.Empty;
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", FaceServiceHost, groupId, personId, userData, sFaceRect);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
@@ -561,7 +596,7 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			face = JsonConvert.DeserializeObject<PersonFace>(reader.ReadToEnd(), jsonSettings);
+			face = JsonUtility.FromJson<PersonFace>(reader.ReadToEnd());
 		}
 		else
 		{
@@ -587,12 +622,12 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, person.PersonId.ToString());
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, person.personId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		string sJsonContent = JsonConvert.SerializeObject(new { name = person.Name, userData = person.UserData }, jsonSettings);
+		string sJsonContent = JsonUtility.ToJson(new PersonRequest(person.name, person.userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PATCH", "application/json", btContent, headers, true, false);
 		
@@ -666,7 +701,7 @@ public class CloudFaceManager : MonoBehaviour
 	public bool IsPersonGroupTrained(string groupId)
 	{
 		TrainingStatus status = GetPersonGroupTrainingStatus(groupId);
-		bool bSuccess = (status != null && status.Status == Status.Succeeded);
+		bool bSuccess = (status != null && status.status == Status.Succeeded);
 		
 		return bSuccess;
 	}
@@ -695,7 +730,7 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			status = JsonConvert.DeserializeObject<TrainingStatus>(reader.ReadToEnd(), jsonSettings);
+			status = JsonUtility.FromJson<TrainingStatus>(reader.ReadToEnd());
 		}
 		else
 		{
@@ -720,10 +755,10 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 
-		Guid[] faceIds = new Guid[faces.Length];
+		string[] faceIds = new string[faces.Length];
 		for(int i = 0; i < faces.Length; i++)
 		{
-			faceIds[i] = faces[i].FaceId;
+			faceIds[i] = faces[i].faceId;
 		}
 
 		if(maxCandidates <= 0)
@@ -736,7 +771,7 @@ public class CloudFaceManager : MonoBehaviour
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 		
-		string sJsonContent = JsonConvert.SerializeObject(new { personGroupId = groupId, faceIds = faceIds, maxNumOfCandidatesReturned = maxCandidates }, jsonSettings);
+		string sJsonContent = JsonUtility.ToJson(new IdentityRequest(groupId, faceIds, maxCandidates));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
 		
@@ -744,7 +779,9 @@ public class CloudFaceManager : MonoBehaviour
 		if(!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
-			results = JsonConvert.DeserializeObject<IdentifyResult[]>(reader.ReadToEnd(), jsonSettings);
+			string newJson = "{ \"identityResults\": " + reader.ReadToEnd() + "}";
+			IdentifyResultCollection resultCollection = JsonUtility.FromJson<IdentifyResultCollection>(newJson);
+			results = resultCollection.identityResults;
 		}
 		else
 		{
@@ -770,24 +807,24 @@ public class CloudFaceManager : MonoBehaviour
 		// clear face identities
 		for(int i = 0; i < faces.Length; i++)
 		{
-			faces[i].Candidate = null;
+			faces[i].candidate = null;
 		}
 
 		foreach(IdentifyResult ident in identities)
 		{
-			Guid faceId = ident.FaceId;
+			string faceId = ident.faceId;
 			
 			for(int i = 0; i < faces.Length; i++)
 			{
-				if(faces[i].FaceId == faceId)
+				if(faces[i].faceId == faceId)
 				{
-					if(ident.Candidates != null && ident.Candidates.Length > 0)
+					if(ident.candidates != null && ident.candidates.Length > 0)
 					{
-						faces[i].Candidate = ident.Candidates[0];
+						faces[i].candidate = ident.candidates[0];
 
-						if(faces[i].Candidate != null)
+						if(faces[i].candidate != null)
 						{
-							faces[i].Candidate.Person = GetPerson(groupId, faces[i].Candidate.PersonId.ToString());
+							faces[i].candidate.person = GetPerson(groupId, faces[i].candidate.personId);
 						}
 					}
 
@@ -809,15 +846,20 @@ public class CloudFaceManager : MonoBehaviour
 		StreamReader reader = new StreamReader(response.GetResponseStream());
 		string responseText = reader.ReadToEnd();
 
-		ClientError ex = JsonConvert.DeserializeObject<ClientError>(responseText);
+		//ClientError ex = JsonConvert.DeserializeObject<ClientError>(responseText);
+		ClientError ex = JsonUtility.FromJson<ClientError>(responseText);
+
 		if (ex.error != null && ex.error.code != null)
 		{
-			string sErrorMsg = !string.IsNullOrEmpty(ex.error.message) ? ex.error.message : ex.error.code;
+			string sErrorMsg = !string.IsNullOrEmpty(ex.error.code) && ex.error.code != "Unspecified" ?
+				ex.error.code + " - " + ex.error.message : ex.error.message;
 			throw new System.Exception(sErrorMsg);
 		}
 		else
 		{
-			ServiceError serviceEx = JsonConvert.DeserializeObject<ServiceError>(responseText);
+			//ServiceError serviceEx = JsonConvert.DeserializeObject<ServiceError>(responseText);
+			ServiceError serviceEx = JsonUtility.FromJson<ServiceError>(responseText);
+
 			if (serviceEx != null && serviceEx.statusCode != null)
 			{
 				string sErrorMsg = !string.IsNullOrEmpty(serviceEx.statusCode) && serviceEx.statusCode != "Unspecified" ?
@@ -832,12 +874,12 @@ public class CloudFaceManager : MonoBehaviour
 	}
 	
 	
-	private JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
-	{
-		DateFormatHandling = DateFormatHandling.IsoDateFormat,
-		NullValueHandling = NullValueHandling.Ignore,
-		ContractResolver = new CamelCasePropertyNamesContractResolver()
-	};
+//	private JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
+//	{
+//		DateFormatHandling = DateFormatHandling.IsoDateFormat,
+//		NullValueHandling = NullValueHandling.Ignore,
+//		ContractResolver = new CamelCasePropertyNamesContractResolver()
+//	};
 
 
 }

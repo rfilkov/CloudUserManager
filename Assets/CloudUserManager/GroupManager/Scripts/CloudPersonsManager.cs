@@ -14,11 +14,13 @@ public class CloudPersonsManager : MonoBehaviour
 
 	public GameObject personPanelPrefab;
 
+	private Text listHeaderText;
     private RectTransform personsListContent;
     private ModalPanel modalPanel;
+
     private List<Person> persons;
     private Person selectedPerson;
-    private Dictionary<Guid, GameObject> personsPanels = new Dictionary<Guid, GameObject>();
+    private Dictionary<string, GameObject> personsPanels = new Dictionary<string, GameObject>();
 
     void Awake()
     {
@@ -26,6 +28,7 @@ public class CloudPersonsManager : MonoBehaviour
         //personPanelPrefab = Resources.LoadAssetAtPath<GameObject>("Assets/GroupManagement/Prefabs/PersonListItem.prefab");
 
         personsListContent = personsListPanel.FindComponentInChildWithTag<RectTransform>("ListViewContent");
+		listHeaderText = personsListPanel.FindComponentInChildWithTag<Text>("ListHeaderText");
     }
 
     // Use this for initialization
@@ -72,7 +75,7 @@ public class CloudPersonsManager : MonoBehaviour
     {
         if (selectedPerson != null)
         {
-            modalPanel.ShowYesNoDialog(string.Format("Are you sure you want to delete {0}?", selectedPerson.Name), () => {
+            modalPanel.ShowYesNoDialog(string.Format("Are you sure you want to delete {0}?", selectedPerson.name), () => {
                 StartCoroutine(DeletePerson(selectedPerson));
 
                 selectedPerson = null;
@@ -94,17 +97,8 @@ public class CloudPersonsManager : MonoBehaviour
     {
         AsyncTask<bool> task = new AsyncTask<bool>(() =>
         {
-            try
-            {
-				CloudUserManager groupMgr = CloudUserManager.Instance;
-
-                return groupMgr.StartGroupTraining();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
-                return false;
-            }
+			CloudUserManager groupMgr = CloudUserManager.Instance;
+            return groupMgr.StartGroupTraining();
         });
 
         bool abort = false;
@@ -118,32 +112,28 @@ public class CloudPersonsManager : MonoBehaviour
 
         if (!task.Result)
         {
-            modalPanel.ShowMessage("Group training failed. Please, try again later.");
+			if(!string.IsNullOrEmpty(task.ErrorMessage))
+				modalPanel.ShowMessage(task.ErrorMessage);
+			else
+            	modalPanel.ShowMessage("Group training failed. Please, try again later.");
+			
             yield return null;
         }
         else if(!abort)
         {
             task = new AsyncTask<bool>(() =>
             {
-                try
-                {
-					CloudUserManager groupMgr = CloudUserManager.Instance;
+				CloudUserManager groupMgr = CloudUserManager.Instance;
 
-                    bool isTrained = false;
-                    int retries = 0;
-                    while (!isTrained && retries++ < 3 && !abort)
-                    {
-                        Thread.Sleep(5000);
-                        isTrained = groupMgr.IsGroupTrained();
-                    }
-
-                    return isTrained;
-                }
-                catch (Exception ex)
+                bool isTrained = false;
+                int retries = 0;
+                while (!isTrained && retries++ < 3 && !abort)
                 {
-					Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
-                    return false;
+                    Thread.Sleep(5000);
+                    isTrained = groupMgr.IsGroupTrained();
                 }
+
+                return isTrained;
             });
 
             task.Start();
@@ -156,12 +146,14 @@ public class CloudPersonsManager : MonoBehaviour
             {
                 if (!task.Result)
                 {
-                    modalPanel.ShowMessage("Group training failed. Please, try again later.");
+					if(!string.IsNullOrEmpty(task.ErrorMessage))
+						modalPanel.ShowMessage(task.ErrorMessage);
+					else
+                    	modalPanel.ShowMessage("Group training failed. Please, try again later.");
                 }
                 else
                 {
                     modalPanel.ShowMessage("Group training succeeded.");
-
                     TrainGroupButton.SetActive(false);
                 }
             }
@@ -174,17 +166,19 @@ public class CloudPersonsManager : MonoBehaviour
     {
         AsyncTask<bool> task = new AsyncTask<bool>(() =>
         {
-            try
-            {
-				CloudUserManager groupMgr = CloudUserManager.Instance;
+			CloudUserManager groupMgr = CloudUserManager.Instance;
 
-                return groupMgr.IsGroupTrained();
-            }
-            catch (Exception ex)
-            {
-				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
-                return false;
-            }
+			// wait for the group manager to start
+			int waitPeriods = 10;
+			while(groupMgr == null && waitPeriods > 0)
+			{
+				Thread.Sleep(500);
+				waitPeriods--;
+
+				groupMgr = CloudUserManager.Instance;
+			}
+
+			return groupMgr ? groupMgr.IsGroupTrained() : false;
         });
 
         task.Start();
@@ -195,8 +189,17 @@ public class CloudPersonsManager : MonoBehaviour
 
         if (!task.Result)
         {
+			if(!string.IsNullOrEmpty(task.ErrorMessage))
+				Debug.LogError(task.ErrorMessage);
+			
             TrainGroupButton.SetActive(true);
         }
+
+		CloudUserManager userManager = CloudUserManager.Instance;
+		if(userManager && listHeaderText)
+		{
+			listHeaderText.text = "Group: " + userManager.userGroupId;
+		}
 
         yield return null;
     }
@@ -216,33 +219,20 @@ public class CloudPersonsManager : MonoBehaviour
 
         AsyncTask<List<Person>> task = new AsyncTask<List<Person>>(() =>
         {
-            try
-            {
-                //Load Persons here
-				CloudUserManager groupMgr = CloudUserManager.Instance;
+            // load persons here
+			CloudUserManager groupMgr = CloudUserManager.Instance;
 
-				// wait for the group manager to start
-				int waitPeriods = 10;
-				while(groupMgr == null && waitPeriods > 0)
-				{
-					Thread.Sleep(500);
-					waitPeriods--;
+			// wait for the group manager to start
+			int waitPeriods = 10;
+			while(groupMgr == null && waitPeriods > 0)
+			{
+				Thread.Sleep(500);
+				waitPeriods--;
 
-					groupMgr = CloudUserManager.Instance;
-				}
+				groupMgr = CloudUserManager.Instance;
+			}
 
-				if(groupMgr != null)
-				{
-					return groupMgr.GetUsersList();
-				}
-
-				return null;
-            }
-            catch (Exception ex)
-            {
-				Debug.LogError("Failed to process task: " + ex.Message + "\n" + ex.StackTrace);
-                return null;
-            }
+			return groupMgr ? groupMgr.GetUsersList() : null;
         });
 
         task.Start();
@@ -257,7 +247,7 @@ public class CloudPersonsManager : MonoBehaviour
 		if(persons != null)
 		{
 			// sort the person names alphabetically
-			persons = persons.OrderBy(p => p.Name).ToList();
+			persons = persons.OrderBy(p => p.name).ToList();
 
 			foreach (Person p in persons)
 			{
@@ -266,7 +256,10 @@ public class CloudPersonsManager : MonoBehaviour
 		}
 		else
 		{
-			Debug.LogError("Error loading users' list. Check the FaceManager- and UserGroupManager-components.");
+			if(!string.IsNullOrEmpty(task.ErrorMessage))
+				Debug.LogError(task.ErrorMessage);
+			else
+				Debug.LogError("Error loading users' list. Check the FaceManager- and UserGroupManager-components.");
 		}
 
         yield return null;
@@ -284,15 +277,15 @@ public class CloudPersonsManager : MonoBehaviour
 
 		GameObject personNameObj = personPanelInstance.transform.Find("PersonName").gameObject;
 		Text personNameTxt = personNameObj.GetComponent<Text>(); // personPanelInstance.GetComponentInChildren<Text>();
-		personNameTxt.text = p.Name;
+		personNameTxt.text = p.name;
 
 		GameObject personIDObj = personPanelInstance.transform.Find("PersonID").gameObject;
 		Text personIDTxt = personIDObj.GetComponent<Text>();
-		personIDTxt.text = "ID: " + p.PersonId.ToString();
+		personIDTxt.text = "ID: " + p.personId;
 
         personPanelInstance.transform.SetParent(personsListContent, false);
         AddPersonPanelClickListener(personPanelInstance, p);
-        personsPanels.Add(p.PersonId, personPanelInstance);
+        personsPanels.Add(p.personId, personPanelInstance);
     }
 
     private void DestroyPersonPanel(GameObject panel)
@@ -314,8 +307,8 @@ public class CloudPersonsManager : MonoBehaviour
 
 				if(groupMgr != null && p != null)
 				{
-					p.Name = name;
-                    p.UserData = userData;
+					p.name = name;
+                    p.userData = userData;
 					groupMgr.UpdateUserData(p);
 
 					return true;
@@ -342,12 +335,13 @@ public class CloudPersonsManager : MonoBehaviour
         {
             modalPanel.ShowMessage("Error saving data!");
         }
-        else {
+        else 
+		{
             HidePersonDetails();
 
             if (p != null)
             {
-                GameObject personPanelInstance = personsPanels[p.PersonId];
+                GameObject personPanelInstance = personsPanels[p.personId];
                 Text personName = personPanelInstance.GetComponentInChildren<Text>();
                 personName.text = name;
             }
@@ -395,7 +389,8 @@ public class CloudPersonsManager : MonoBehaviour
         {
             modalPanel.ShowMessage("Error saving data!");
         }
-        else {
+        else 
+		{
             HidePersonDetails();
 
 			if(p != null)
@@ -446,16 +441,17 @@ public class CloudPersonsManager : MonoBehaviour
         {
             modalPanel.ShowMessage("Error deleting user!");
         }
-        else {
+        else 
+		{
             HidePersonDetails();
 
             if (p != null)
             {
                 persons.Remove(p);
                 
-                GameObject personPanelInstance = personsPanels[p.PersonId];
+                GameObject personPanelInstance = personsPanels[p.personId];
                 DestroyPersonPanel(personPanelInstance);
-                personsPanels.Remove(p.PersonId);
+                personsPanels.Remove(p.personId);
             }
         }
 
@@ -464,10 +460,10 @@ public class CloudPersonsManager : MonoBehaviour
 
     private void LoadPersonDetails(Person p)
     {
-        PersonNameInputValue = p != null ? p.Name : "";
-        PersonUserDataInputValue = p != null ? p.UserData : "";
-        PersonFaceIdText = p != null && p.PersistedFaceIds != null && p.PersistedFaceIds.Length > 0 ? ("FaceID: " + p.PersistedFaceIds[0].ToString()) : "No Face ID";
-        PersonIdText = p != null && p.PersonId != Guid.Empty ? p.PersonId.ToString() : "";
+        PersonNameInputValue = p != null ? p.name : "";
+        PersonUserDataInputValue = p != null ? p.userData : "";
+        PersonFaceIdText = p != null && p.persistedFaceIds != null && p.persistedFaceIds.Length > 0 ? ("FaceID: " + p.persistedFaceIds[0].ToString()) : "No Face ID";
+        PersonIdText = p != null && p.personId != string.Empty ? p.personId : "";
     }
 
     private string PersonNameInputValue

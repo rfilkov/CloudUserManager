@@ -7,7 +7,7 @@ using System;
 public class CloudUserManager : MonoBehaviour 
 {
 	[Tooltip("ID (short name) of the user group, containing the face-identified users. It will be created, if not found.")]
-	public string userGroupId = "game-users";
+	public string userGroupId = "demo-users";
 
 	[Tooltip("Whether group existence should be checked at start.")]
 	public bool checkGroupAtStart = true;
@@ -25,7 +25,7 @@ public class CloudUserManager : MonoBehaviour
 	private const int threadWaitMs = 200;
 
 	private static CloudUserManager instance = null;
-	private bool isInitialized = false;
+	private string initedGroupId = string.Empty;
 
 
 
@@ -48,11 +48,11 @@ public class CloudUserManager : MonoBehaviour
 	/// <returns><c>true</c> if the UserGroupManager is initialized; otherwise, <c>false</c>.</returns>
 	public bool IsInitialized()
 	{
-		return isInitialized;
+		return (userGroupId == initedGroupId);
 	}
 	
 	
-	void Start () 
+	void Start() 
 	{
 		try 
 		{
@@ -77,7 +77,27 @@ public class CloudUserManager : MonoBehaviour
 			}
 
 			// get the user group info
-			isInitialized = checkGroupAtStart ? GetOrGreateUserGroup() : false;
+			if(checkGroupAtStart) 
+			{
+				AsyncTask<bool> task = new AsyncTask<bool>(() => {
+					GetOrGreateUserGroup();
+					return (userGroupId == initedGroupId);
+				});
+
+				task.Start();
+
+				int waitounter = threadWaitLoops;
+				while (task.State == TaskState.Running && waitounter > 0)
+				{
+					Thread.Sleep(threadWaitMs);
+					waitounter--;
+				}
+
+				if(!string.IsNullOrEmpty(task.ErrorMessage))
+				{
+					throw new Exception(task.ErrorMessage);
+				}
+			}
 		} 
 		catch (Exception ex) 
 		{
@@ -102,9 +122,9 @@ public class CloudUserManager : MonoBehaviour
 	public bool StartGroupTraining()
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return false;
 
 		if(faceManager != null)
@@ -123,9 +143,9 @@ public class CloudUserManager : MonoBehaviour
 	public TrainingStatus GetTrainingStatus()
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return null;
 		
 		// get the training status
@@ -146,9 +166,9 @@ public class CloudUserManager : MonoBehaviour
 	public bool IsGroupTrained()
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return false;
 		
 		if(faceManager != null)
@@ -187,9 +207,9 @@ public class CloudUserManager : MonoBehaviour
 	public bool IdentifyUsers(byte[] imageBytes, ref Face[] faces, ref IdentifyResult[] results)
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return false;
 
 		// detect and identify user faces
@@ -198,22 +218,13 @@ public class CloudUserManager : MonoBehaviour
 
 		if(faceManager != null)
 		{
-			//faces = faceManager.DetectFaces(imageBytes);
-			AsyncTask<Face[]> task = faceManager.DetectFaces(imageBytes);
-
-			while (task.State == TaskState.Running)
-			{
-				//yield return null;
-				Thread.Sleep(threadWaitMs);
-			}
-
-			faces = task.Result;
+			faces = faceManager.DetectFaces(imageBytes);
 
 			// get the training status
 			TrainingStatus training = faceManager.GetPersonGroupTrainingStatus(userGroupId);
 			bool bEmptyGroup = false;
 
-			if(training != null && training.Status == Status.Failed)
+			if(training != null && training.status == Status.Failed)
 			{
 				// check if there are persons in this group
 				List<Person> listPersons = GetUsersList();
@@ -226,13 +237,13 @@ public class CloudUserManager : MonoBehaviour
 				else
 				{
 					// empty list - always returns 'training failed'
-					training.Status = Status.Succeeded;
+					training.status = Status.Succeeded;
 					bEmptyGroup = true;
 				}
 			}
 			
-			float waitTill = Time.realtimeSinceStartup + 5f;
-			while((training == null || training.Status != Status.Succeeded) && (Time.realtimeSinceStartup < waitTill))
+			DateTime waitTill = DateTime.Now.AddSeconds(5);
+			while((training == null || training.status != Status.Succeeded) && (DateTime.Now < waitTill))
 			{
 				// wait for training to succeed
 				System.Threading.Thread.Sleep(1000);
@@ -263,9 +274,9 @@ public class CloudUserManager : MonoBehaviour
 	/// <returns>The users list.</returns>
 	public List<Person> GetUsersList()
 	{
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return null;
 		
 		if(faceManager != null && !string.IsNullOrEmpty(userGroupId))
@@ -289,9 +300,9 @@ public class CloudUserManager : MonoBehaviour
 	/// <param name="personId">Person ID</param>
 	public Person GetUserById(string personId)
 	{
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return null;
 
 		Person person = null;
@@ -333,9 +344,9 @@ public class CloudUserManager : MonoBehaviour
 	public Person AddUserToGroup(string userName, string userData, byte[] imageBytes, FaceRectangle faceRect)
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return null;
 		
 		if(faceManager != null)
@@ -356,13 +367,13 @@ public class CloudUserManager : MonoBehaviour
 				PersonFace personFace = null;
 				if(imageBytes != null)
 				{
-					personFace = faceManager.AddFaceToPerson(userGroupId, person.PersonId.ToString (), string.Empty, faceRect, imageBytes);
+					personFace = faceManager.AddFaceToPerson(userGroupId, person.personId, string.Empty, faceRect, imageBytes);
 				}
 
 				if(personFace != null)
 				{
-					person.PersistedFaceIds = new Guid[1];
-					person.PersistedFaceIds[0] = personFace.PersistedFaceId;
+					person.persistedFaceIds = new string[1];
+					person.persistedFaceIds[0] = personFace.persistedFaceId;
 
 					faceManager.TrainPersonGroup(userGroupId);
 				}
@@ -384,9 +395,9 @@ public class CloudUserManager : MonoBehaviour
 	public Person AddUserToGroup(string userName, string userData)
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return null;
 
 		Person person = null;
@@ -427,19 +438,19 @@ public class CloudUserManager : MonoBehaviour
 	public string AddFaceToUser(Person person, byte[] imageBytes, FaceRectangle faceRect)
 	{
 		// create the user-group if needed
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return string.Empty;
 		
 		if(faceManager != null && person != null && imageBytes != null)
 		{
-			PersonFace personFace = faceManager.AddFaceToPerson(userGroupId, person.PersonId.ToString (), string.Empty, faceRect, imageBytes);
+			PersonFace personFace = faceManager.AddFaceToPerson(userGroupId, person.personId, string.Empty, faceRect, imageBytes);
 
 			if(personFace != null)
 			{
 				faceManager.TrainPersonGroup(userGroupId);
-				return personFace.PersistedFaceId.ToString();
+				return personFace.persistedFaceId;
 			}
 		}
 		
@@ -453,9 +464,9 @@ public class CloudUserManager : MonoBehaviour
 	/// <param name="person">Person to be updated.</param>
 	public void UpdateUserData(Person person)
 	{
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return;
 		
 		if(faceManager != null && !string.IsNullOrEmpty(userGroupId) && person != null)
@@ -471,21 +482,21 @@ public class CloudUserManager : MonoBehaviour
 	/// <param name="person">Person to be deleted.</param>
 	public void DeleteUser(Person person)
 	{
-		if(!isInitialized)
-			isInitialized = GetOrGreateUserGroup();
-		if(!isInitialized)
+		if(userGroupId != initedGroupId)
+			GetOrGreateUserGroup();
+		if(userGroupId != initedGroupId)
 			return;
 		
 		if(faceManager != null && !string.IsNullOrEmpty(userGroupId) && person != null)
 		{
-			faceManager.DeletePerson(userGroupId, person.PersonId.ToString());
+			faceManager.DeletePerson(userGroupId, person.personId);
 			faceManager.TrainPersonGroup(userGroupId);
 		}
 	}
 	
 	
 	// gets the person group info
-	private bool GetOrGreateUserGroup()
+	private void GetOrGreateUserGroup()
 	{
 		if(!string.IsNullOrEmpty(userGroupId) && faceManager != null)
 		{
@@ -507,10 +518,8 @@ public class CloudUserManager : MonoBehaviour
 				Debug.Log("User-group '" + userGroupId + "' created.");
 			}
 			
-			return (personGroup != null);
+			initedGroupId = (personGroup != null) ? personGroup.personGroupId : string.Empty;
 		}
-
-		return false;
 	}
 
 }

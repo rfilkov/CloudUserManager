@@ -24,6 +24,18 @@ public class CloudTexTools
 		return flipped;
 	}
 
+	// gets rectangular part of the specified texture
+	public static Texture2D GetTexturePart(Texture2D tex, int x, int y, int w, int h)
+	{
+		Color[] pixels = tex.GetPixels(x, y, w, h);
+
+		Texture2D destTex = new Texture2D(w, h);
+		destTex.SetPixels(pixels);
+		destTex.Apply();
+
+		return destTex;
+	}
+
 	// draws rect in texture
 	public static void DrawRect(Texture2D a_Texture, int x, int y, int w, int h, Color a_Color)
 	{

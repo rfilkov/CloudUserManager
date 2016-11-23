@@ -1,6 +1,14 @@
 ﻿using System;
 
 
+[Serializable]
+public class EmotionCollection
+{
+	public Emotion[] emotions;
+}
+
+
+[Serializable]
 public class Emotion
 {
     /// <summary>
@@ -9,7 +17,7 @@ public class Emotion
     /// <value>
     /// The face rectangle.
     /// </value>
-    public FaceRectangle FaceRectangle { get; set; }
+	public FaceRectangle faceRectangle;
 
     /// <summary>
     /// Gets or sets the emotion scores.
@@ -17,7 +25,8 @@ public class Emotion
     /// <value>
     /// The emotion scores.
     /// </value>
-    public Scores Scores { get; set; }
+	public Scores scores;
+
 
     public override bool Equals(object o)
     {
@@ -27,31 +36,33 @@ public class Emotion
 
         if (other == null) return false;
 
-        if (this.FaceRectangle == null)
+        if (this.faceRectangle == null)
         {
-            if (other.FaceRectangle != null) return false;
+            if (other.faceRectangle != null) return false;
         }
         else
         {
-            if (!this.FaceRectangle.Equals(other.FaceRectangle)) return false;
+            if (!this.faceRectangle.Equals(other.faceRectangle)) return false;
         }
 
-        if (this.Scores == null)
+        if (this.scores == null)
         {
-            return other.Scores == null;
+            return other.scores == null;
         }
         else
         {
-            return this.Scores.Equals(other.Scores);
+            return this.scores.Equals(other.scores);
         }
     }
 
     public override int GetHashCode()
     {
-        int r = (FaceRectangle == null) ? 0x33333333 : FaceRectangle.GetHashCode();
-        int s = (Scores == null) ? 0xccccccc : Scores.GetHashCode();
+        int r = (faceRectangle == null) ? 0x33333333 : faceRectangle.GetHashCode();
+        int s = (scores == null) ? 0xccccccc : scores.GetHashCode();
+
         return r ^ s;
     }
+
 }
 
 
