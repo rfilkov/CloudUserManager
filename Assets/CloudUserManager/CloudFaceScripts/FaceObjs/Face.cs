@@ -58,4 +58,10 @@ public class Face
 	/// <value>The identified candidate.</value>
 	public Candidate candidate;
 
+	/// <summary>
+	/// Gets or sets the face image texture.
+	/// </summary>
+	/// <value>The face image texture.</value>
+	public UnityEngine.Texture2D faceImage;
+
 }

@@ -350,7 +350,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The face texture.</returns>
 	/// <param name="tex">The camera shot texture</param>
 	/// <param name="face">The detected face</param>
-	public static Texture2D GetFaceTexture(Texture2D tex, Face face)
+	public static Texture2D GetFaceTexture(Texture2D tex, ref Face face)
 	{
 		if(tex != null && face != null)
 		{
@@ -363,6 +363,26 @@ public class CloudFaceManager : MonoBehaviour
 		return null;
 	}
 	
+
+	/// <summary>
+	/// Matches the face images.
+	/// </summary>
+	/// <returns><c>true</c>, if face images were matched, <c>false</c> otherwise.</returns>
+	/// <param name="tex">The camera shot texture</param>
+	/// <param name="faces">The array of detected faces.</param>
+	public static bool MatchFaceImages(Texture2D tex, ref Face[] faces)
+	{
+		if(tex == null || faces == null)
+			return false;
+
+		for(int i = 0; i < faces.Length; i++)
+		{
+			faces[i].faceImage = GetFaceTexture(tex, ref faces[i]);
+		}
+
+		return true;
+	}
+
 
 	/// <summary>
 	/// Creates a person group.

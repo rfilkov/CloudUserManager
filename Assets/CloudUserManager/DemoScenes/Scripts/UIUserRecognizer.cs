@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 
 public class UIUserRecognizer : MonoBehaviour
@@ -34,7 +35,7 @@ public class UIUserRecognizer : MonoBehaviour
 
 	// list of found persons
 	private Dictionary<string, GameObject> personsPanels = new Dictionary<string, GameObject>();
-	private Face selectedPerson;
+	//private Face selectedPerson;
 
 	// array of faces
 	private Face[] faces = null;
@@ -218,6 +219,9 @@ public class UIUserRecognizer : MonoBehaviour
 		// create the new list
 		if(faces != null)
 		{
+			// get face images
+			CloudFaceManager.MatchFaceImages(texCamShot, ref faces);
+
 			// show recognized persons
 			for(int i = 0; i < faces.Length; i++)
 			{
@@ -251,8 +255,7 @@ public class UIUserRecognizer : MonoBehaviour
 		GameObject userItemInstance = Instantiate<GameObject>(userItemPrefab);
 
 		GameObject userImageObj = userItemInstance.transform.Find("UserImagePanel").gameObject;
-		Texture2D texFace = CloudFaceManager.GetFaceTexture(texCamShot, f);
-		userImageObj.GetComponentInChildren<RawImage>().texture = texFace;
+		userImageObj.GetComponentInChildren<RawImage>().texture = f.faceImage;
 
         string faceColorName = FaceDetectionUtils.FaceColorNames[i % FaceDetectionUtils.FaceColors.Length];
 		string userName = string.Format("<color={0}>{1}</color>", faceColorName, p != null ? p.name : faceColorName + " face");
@@ -325,8 +328,16 @@ public class UIUserRecognizer : MonoBehaviour
 
 	private void OnUserLoginClick(Face f)
 	{
-		selectedPerson = f;
-		SetHintText("Selected: " + f.candidate.person.name);
+		CloudUserData userData = CloudUserData.Instance;
+		if(userData)
+		{
+			userData.selectedUser = f;
+		}
+
+		SetHintText("Selected: " + (userData ? userData.selectedUser.candidate.person.name : "-"));
+
+		// load the main scene
+		SceneManager.LoadScene(1);
 	}
 
 	private void OnSaveUserClick(Face f, InputField saveNameInput, InputField safeInfoInput)
