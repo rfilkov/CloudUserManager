@@ -1,409 +1,366 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System;
+using System.Text;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
-public class CloudUserRecognizer : MonoBehaviour 
+
+public class CloudUserRecognizer : MonoBehaviour
 {
-	[Tooltip("Image source used for getting face images.")]
-	public ImageSourceInterface imageSource;
-	
-	[Tooltip("Game object used for camera shot rendering.")]
-	public GUITexture cameraShot;
-	
-	[Tooltip("GUI text used for hints and status messages.")]
-	public GUIText hintText;
+    [Tooltip("Image source component used for making camera shots.")]
+	public WebcamSource webcamSource;
 
-	// internal user recognition state
-	private int state = 0;
+    [Tooltip("Image component used for rendering camera shots.")]
+    public RawImage cameraShot;
 
-	// used face colors and color names
-	private Color[] faceColors;
-	private string[] faceColorNames;
-	
+	[Tooltip("Text component used for displaying hints and status messages.")]
+    public Text hintText;
+
+	[Tooltip("Reference to the user list content.")]
+	public RectTransform userListContent;
+
+	[Tooltip("Reference to the user item prefab.")]
+	public GameObject userItemPrefab;
+
+    // whether webcamSource has been set or there is web camera at all
+    private bool hasCamera = false;
+
+    // initial hint message
+    private string hintMessage;
+
+    // AspectRatioFitter component;
+    private AspectRatioFitter ratioFitter;
+
+	// list of found persons
+	private Dictionary<string, GameObject> personsPanels = new Dictionary<string, GameObject>();
+	//private Face selectedPerson;
+
 	// array of faces
 	private Face[] faces = null;
-
 	// array of identification results
 	private IdentifyResult[] results = null;
-
-	// GUI background texture
-	private Texture2D guiTexBack = null;
-
-	// GUI scroll variable for the results' list
-	private Vector2 scroll;
-	// selected user face
-	private int selected = 0;
-
-	// new user name
-	private string userName = string.Empty;
+	// camera shot texture
+	private Texture2D texCamShot = null;
 
 
-	void Start()
-	{
-		// get the first image source among mono behaviors
-		MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
-		
-		foreach(MonoBehaviour monoScript in monoScripts)
+    void Start()
+    {
+        if (cameraShot)
+        {
+            ratioFitter = cameraShot.GetComponent<AspectRatioFitter>();
+        }
+
+		hasCamera = webcamSource != null && webcamSource.HasCamera();
+
+        hintMessage = hasCamera ? "Click on the camera image to make a shot" : "No camera found";
+        
+        SetHintText(hintMessage);
+    }
+
+    // camera panel onclick event handler
+    public void OnCameraClick()
+    {
+        if (!hasCamera) 
+			return;
+        
+        if (DoCameraShot())
+        {
+            StartCoroutine(DoUserRecognition());
+        }        
+    }
+
+    // camera-shot panel onclick event handler
+    public void OnShotClick()
+    {
+        if (DoImageImport())
+        {
+            StartCoroutine(DoUserRecognition());
+        }
+    }
+
+    // camera shot step
+    private bool DoCameraShot()
+    {
+        if (cameraShot != null && webcamSource != null)
+        {
+            SetShotImageTexture(webcamSource.GetImage());
+            return true;
+        }
+
+        return false;
+    }
+
+    // imports image and displays it on the camera-shot object
+    private bool DoImageImport()
+    {
+        Texture2D tex = FaceDetectionUtils.ImportImage();
+        if (!tex) return false;
+
+        SetShotImageTexture(tex);
+
+        return true;
+    }
+
+	// display image on the camera-shot object
+	private void SetShotImageTexture(Texture2D tex)
+	{        
+		if (ratioFitter)
 		{
-			if(typeof(ImageSourceInterface).IsAssignableFrom(monoScript.GetType()) &&
-			   monoScript.enabled)
-			{
-				imageSource = (ImageSourceInterface)monoScript;
-				break;
-			}
+			ratioFitter.aspectRatio = (float)tex.width / (float)tex.height;
 		}
-		
-		// init face colors
-		faceColors = CloudFaceManager.GetFaceColors();
-		faceColorNames = CloudFaceManager.GetFaceColorNames();
 
-		// initialize gui backfround tex
-		guiTexBack = new Texture2D(64, 64, TextureFormat.ARGB32, false);
-		Color backColor = (Color)new Color32(32, 32, 32, 220);
-		
-		for (int y = 0; y < guiTexBack.height; ++y)
+		if (cameraShot)
 		{
-			for (int x = 0; x < guiTexBack.width; ++x)
-			{
-				guiTexBack.SetPixel(x, y, backColor);
-			}
-		}
-		
-		guiTexBack.Apply();
-		
-		if(hintText)
-		{
-			hintText.text = "Press Space to make a shot, or Ctrl to select a file.";
-		}
-	}
-
-
-	void Update () 
-	{
-		try 
-		{
-			// check for mouse click
-			bool bImportImage = Input.GetKeyDown(KeyCode.LeftControl);
-			if(/**Input.GetMouseButtonDown(0) ||*/ Input.GetButtonDown("Jump") || bImportImage)
-			{
-				DoMouseClick(bImportImage);
-			}
-			
-			// check for Esc, to stop the app
-			if(Input.GetKeyDown(KeyCode.Escape))
-			{
-				Application.Quit();
-			}
-		} 
-		catch (Exception ex) 
-		{
-			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
-			
-			if(hintText != null)
-			{
-				hintText.text = ex.Message;
-			}
-		}
-	}
-
-	void OnGUI()
-	{
-		// set gui font
-		GUI.skin.font = hintText ? hintText.GetComponent<GUIText>().font : GUI.skin.font;
-
-		if(state == 1)
-		{
-			Rect guiResultRect = new Rect(Screen.width - 180, 0, 170, Screen.height);
-
-			GUIStyle guiStyle = new GUIStyle();
-			guiStyle.normal.background = guiTexBack;
-
-			GUILayout.BeginArea(guiResultRect, guiStyle);
-
-			scroll = GUILayout.BeginScrollView(scroll);
-			GUILayout.BeginVertical();
-
-			GUIStyle labelStyle = GUI.skin.GetStyle("Label");
-			labelStyle.alignment = TextAnchor.UpperCenter;
-
-			if(faces != null && faces.Length > 0)
-			{
-				GUILayout.Label("Recognized:", labelStyle);
-
-				List<string> alNewFaceNames = new List<string>();
-				List<Face> alNewFaces = new List<Face>();
-
-				for(int i = 0; i < faces.Length; i++)
-				{
-					Face face = faces[i];
-					
-					Color faceColor = faceColors[i % faceColors.Length];
-					string faceColorName = faceColorNames[i % faceColors.Length];
-					
-					Color guiColor = GUI.color;
-					GUI.color = faceColor;
-
-					if(face.candidate != null && face.candidate.person != null)
-					{
-						//GUILayout.Label(string.Format("{0} face: {1}", faceColorName, face.Candidate.Person.Name));
-						GUILayout.Label(string.Format("{0}", face.candidate.person.name));
-					}
-					else
-					{
-						alNewFaceNames.Add(string.Format("{0} face", faceColorName));
-						alNewFaces.Add(face);
-					}
-
-					GUI.color = guiColor;
-				}
-
-				if(faces.Length == alNewFaceNames.Count)
-				{
-					GUILayout.Label("-");
-				}
-
-				// horizontal line
-				GUILayout.Box(string.Empty, new GUILayoutOption[]{GUILayout.ExpandWidth(true), GUILayout.Height(1)});
-				
-				if(alNewFaceNames.Count > 0)
-				{
-					GUILayout.Label("New user:", labelStyle);
-					selected = GUILayout.SelectionGrid(selected, alNewFaceNames.ToArray (), 1);
-					
-					GUILayout.Label("User name:", labelStyle);
-					userName = GUILayout.TextField(userName, 128);
-					
-					if(GUILayout.Button("Add User"))
-					{
-						if(selected >= 0 && !string.IsNullOrEmpty(userName.Trim()))
-						{
-							Face face = alNewFaces[selected];
-							StartCoroutine(AddUserToGroup(face, userName));
-							userName = string.Empty;
-						}
-					}
-				}
-
-				alNewFaceNames.Clear();
-				alNewFaces.Clear();
-			}
-
-			GUILayout.EndVertical();
-			GUILayout.EndScrollView();
-			GUILayout.EndArea();
-		}
-	}
-
-
-	// invoked on mouse clicks
-	private void DoMouseClick(bool bImportImage)
-	{
-		switch(state)
-		{
-		case 0:
-			if(!bImportImage ? DoCameraShot() : DoImageImport())
-			{
-				StartCoroutine(DoUserRecognition());
-				state = 1;
-			}
-			break;
-			
-		case 1:
-			if(DoSwitchWebcam())
-			{
-				state = 0;
-			}
-			break;
-		}
-	}
-	
-	// makes camera shot and displays it on the camera-shot object
-	private bool DoCameraShot()
-	{
-		if(cameraShot && imageSource != null)
-		{
-			Texture tex = imageSource.GetImage();
 			cameraShot.texture = tex;
+		}
+	}
 
-			if(imageSource != null && imageSource.GetTransform() != null)
-				imageSource.GetTransform().gameObject.SetActive(false);
-			cameraShot.gameObject.SetActive(true);
-			
-			Vector3 localScale = cameraShot.transform.localScale;
-			localScale.x = (float)tex.width * Screen.height / ((float)tex.height * Screen.width)
-				* Mathf.Sign(localScale.x);
-			cameraShot.transform.localScale = localScale;
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	// imports image and displays it on the camera-shot object
-	private bool DoImageImport()
-	{
-#if UNITY_EDITOR
-		string filePath = UnityEditor.EditorUtility.OpenFilePanel("Open image file", "", "jpg");  // string.Empty; // 
-#else
-		string filePath = string.Empty;
-#endif
-		if(!string.IsNullOrEmpty(filePath))
-		{
-			byte[] fileBytes = File.ReadAllBytes(filePath);
-			
-			Texture2D tex = new Texture2D(2, 2);
-			tex.LoadImage(fileBytes);
-			
-			if(cameraShot)
-			{
-				cameraShot.texture = tex;
+    // performs user recognition
+    private IEnumerator DoUserRecognition()
+    {
+        // get the image to detect
+        faces = null;
+        texCamShot = null;
 
-				if(imageSource != null && imageSource.GetTransform() != null)
-					imageSource.GetTransform().gameObject.SetActive(false);
-				cameraShot.gameObject.SetActive(true);
-				
-				Vector3 localScale = cameraShot.transform.localScale;
-				localScale.x = (float)tex.width * Screen.height / ((float)tex.height * Screen.width)
-					* Mathf.Sign(localScale.x);
-				cameraShot.transform.localScale = localScale;
-				
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	// switch back the webcam image
-	private bool DoSwitchWebcam()
-	{
-		if(cameraShot && imageSource != null)
-		{
-			if(imageSource != null && imageSource.GetTransform() != null)
-				imageSource.GetTransform().gameObject.SetActive(true);
-			cameraShot.gameObject.SetActive(false);
-			
-			if(hintText)
-			{
-				hintText.text = "Press Space to make a shot, or Ctrl to select a file.";
-			}
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	// performs user recognition
-	private IEnumerator DoUserRecognition()
-	{
-		// get the image to detect
-		faces = null;
-		Texture2D texCamShot = null;
-		
-		if(cameraShot)
-		{
+        if (cameraShot)
+        {
 			texCamShot = (Texture2D)cameraShot.texture;
+            SetHintText("Wait...");
+        }
 
-			if(hintText)
-			{
-				hintText.text = "Wait...";
-			}
-		}
-		
-		yield return null;
-		
 		// get the user manager instance
 		CloudUserManager userManager = CloudUserManager.Instance;
-		
-		if(texCamShot && userManager)
-		{
-			byte[] imageBytes = texCamShot.EncodeToJPG();
-			yield return null;
 
-			AsyncTask<bool> task = new AsyncTask<bool>(() => {
-				bool bSuccess = userManager.IdentifyUsers(imageBytes, ref faces, ref results);
-				return bSuccess;
-			});
-
-			task.Start();
-			yield return null;
-
-			while (task.State == TaskState.Running)
-			{
-				yield return null;
-			}
-
-			if(!string.IsNullOrEmpty(task.ErrorMessage))
-			{
-				Debug.LogError(task.ErrorMessage);
-
-				if(hintText)
-				{
-					hintText.text = task.ErrorMessage;
-				}
-			}
-			else if(task.Result)
-			{
-				// draw face rects
-				CloudFaceManager.DrawFaceRects(texCamShot, faces, faceColors);
-				yield return null;
-				
-				if(hintText)
-				{
-					hintText.text = "Press Space or Ctrl to return.";
-				}
-			}
-			else
-			{
-				if(hintText)
-				{
-					hintText.text = "No users detected.";
-				}
-			}
-		}
-		else
-		{
+		if (!userManager)
+        {
 			if(hintText)
 			{
 				hintText.text = "Check if the CloudFaceManager and CloudUserManager components exist in the scene.";
 			}
-		}
-		
-		yield return null;
-	}
-	
+        }
+        else if(texCamShot)
+        {
+			byte[] imageBytes = texCamShot.EncodeToJPG();
+			yield return null;
 
-	// adds the new user to user group
-	private IEnumerator AddUserToGroup(Face face, string userName)
-	{
-		Texture2D texCamShot = null;
-		
-		if(cameraShot)
-		{
-			texCamShot = (Texture2D)cameraShot.texture;
-			
-			if(hintText)
+			AsyncTask<bool> taskIdentify = new AsyncTask<bool>(() => {
+				bool bSuccess = userManager.IdentifyUsers(imageBytes, ref faces, ref results);
+				return bSuccess;
+			});
+
+			taskIdentify.Start();
+			yield return null;
+
+			while (taskIdentify.State == TaskState.Running)
 			{
-				hintText.text = "Wait...";
+				yield return null;
+			}
+
+			if(string.IsNullOrEmpty(taskIdentify.ErrorMessage))
+			{
+				if(taskIdentify.Result)
+				{
+					CloudFaceManager.DrawFaceRects(texCamShot, faces, FaceDetectionUtils.FaceColors);
+					yield return null;
+
+					SetHintText("Select user to login:");
+				}
+				else
+				{
+					SetHintText("No users detected.");
+				}
+
+				// show the identified users
+				ShowIdentityResult();
+			}
+			else
+			{
+				SetHintText(taskIdentify.ErrorMessage);
+			}
+        }
+
+        yield return null;
+    }
+
+    // display identity results
+    private void ShowIdentityResult()
+    {
+//        StringBuilder sbResult = new StringBuilder();
+//
+//        if (faces != null && faces.Length > 0)
+//        {
+//            for (int i = 0; i < faces.Length; i++)
+//            {
+//                Face face = faces[i];
+//                string faceColorName = FaceDetectionUtils.FaceColorNames[i % FaceDetectionUtils.FaceColors.Length];
+//
+//                string res = FaceDetectionUtils.FaceToString(face, faceColorName);
+//
+//                sbResult.Append(string.Format("<color={0}>{1}</color>", faceColorName, res));
+//            }
+//        }
+//
+//        string result = sbResult.ToString();
+//
+//        if (resultText)
+//        {
+//            resultText.text = result;
+//        }
+//        else
+//        {
+//            Debug.Log(result);
+//        }
+
+		// clear current list
+		ClearIdentityResult();
+
+		// create the new list
+		if(faces != null)
+		{
+			// get face images
+			CloudFaceManager.MatchFaceImages(texCamShot, ref faces);
+
+			// show recognized persons
+			for(int i = 0; i < faces.Length; i++)
+			{
+				Face face = faces[i];
+
+				if(face.candidate != null && face.candidate.person != null)
+				{
+					InstantiateUserItem(i, face, face.candidate.person);
+				}
+			}
+
+			// show unrecognized faces
+			for(int i = 0; i < faces.Length; i++)
+			{
+				Face face = faces[i];
+
+				if(face.candidate == null || face.candidate.person == null)
+				{
+					InstantiateUserItem(i, face, null);
+				}
 			}
 		}
-		
-		yield return null;
-		
+
+    }
+
+	private void InstantiateUserItem(int i, Face f, Person p)
+	{
+		if(!userItemPrefab)
+			return;
+
+		GameObject userItemInstance = Instantiate<GameObject>(userItemPrefab);
+
+		GameObject userImageObj = userItemInstance.transform.Find("UserImagePanel").gameObject;
+		userImageObj.GetComponentInChildren<RawImage>().texture = f.faceImage;
+
+        string faceColorName = FaceDetectionUtils.FaceColorNames[i % FaceDetectionUtils.FaceColors.Length];
+		string userName = string.Format("<color={0}>{1}</color>", faceColorName, p != null ? p.name : faceColorName + " face");
+
+		GameObject userNameObj = userItemInstance.transform.Find("UserName").gameObject;
+		userNameObj.GetComponent<Text>().text = userName;
+
+//		GameObject personIdObj = userItemInstance.transform.Find("PersonID").gameObject;
+//		personIdObj.GetComponent<Text>().text = p != null ? "UserID: " + p.personId : string.Empty;
+
+//		GameObject faceIdObj = userItemInstance.transform.Find("FaceID").gameObject;
+//		faceIdObj.GetComponent<Text>().text = "FaceID: " + f.faceId;
+
+		if(p != null)
+		{
+			GameObject userInfoObj = userItemInstance.transform.Find("UserInfo").gameObject;
+			userInfoObj.GetComponent<Text>().text = p.userData;
+			userInfoObj.SetActive(true);
+
+			GameObject loginBtnObj = userItemInstance.transform.Find("LoginButton").gameObject;
+			loginBtnObj.SetActive(true);
+
+			Button loginButton = loginBtnObj.GetComponent<Button>();
+			loginButton.onClick.AddListener(() => OnUserLoginClick(f));
+
+			// enable selectable panel
+			userItemInstance.GetComponent<Selectable>().enabled = true;
+			AddUserPanelClickListener(userItemInstance, f);
+		}
+		else
+		{
+//			GameObject nameHintObj = userItemInstance.transform.Find("NameHint").gameObject;
+//			nameHintObj.SetActive(true);
+
+			GameObject saveNameObj = userItemInstance.transform.Find("SaveName").gameObject;
+			saveNameObj.SetActive(true);
+
+//			GameObject infoHintObj = userItemInstance.transform.Find("InfoHint").gameObject;
+//			infoHintObj.SetActive(true);
+
+			GameObject saveInfoObj = userItemInstance.transform.Find("SaveInfo").gameObject;
+			saveInfoObj.SetActive(true);
+
+			GameObject saveBtnObj = userItemInstance.transform.Find("SaveButton").gameObject;
+			saveBtnObj.SetActive(true);
+
+			Button saveButton = saveBtnObj.GetComponent<Button>();
+			InputField saveNameInput = saveNameObj.GetComponent<InputField>();
+			InputField saveInfoInput = saveInfoObj.GetComponent<InputField>();
+			saveButton.onClick.AddListener(() => OnSaveUserClick(f, saveNameInput, saveInfoInput));
+
+			// disable selectable panel
+			userItemInstance.GetComponent<Selectable>().enabled = false;
+		}
+
+		userItemInstance.transform.SetParent(userListContent, false);
+		personsPanels.Add(f.faceId, userItemInstance);
+	}
+
+	private void AddUserPanelClickListener(GameObject panel, Face f)
+	{
+		EventTrigger trigger = panel.GetComponentInParent<EventTrigger>();
+		EventTrigger.Entry entry = new EventTrigger.Entry();
+
+		entry.eventID = EventTriggerType.PointerClick;
+		entry.callback.AddListener((eventData) => { OnUserLoginClick(f); });
+
+		trigger.triggers.Add(entry);
+	}
+
+	private void OnUserLoginClick(Face f)
+	{
+		CloudUserData userData = CloudUserData.Instance;
+		if(userData)
+		{
+			userData.selectedUser = f;
+		}
+
+		SetHintText("Selected: " + (userData ? userData.selectedUser.candidate.person.name : "-"));
+
+		// load the main scene
+		SceneManager.LoadScene(1);
+	}
+
+	private void OnSaveUserClick(Face f, InputField saveNameInput, InputField safeInfoInput)
+	{
+		StartCoroutine(AddUserToGroup(f, saveNameInput.text, safeInfoInput.text));
+	}
+
+	// adds the new user to user group
+	private IEnumerator AddUserToGroup(Face face, string userName, string userInfo)
+	{
 		CloudUserManager userManager = CloudUserManager.Instance;
-		
+
 		if(texCamShot && userManager && face != null && userName != string.Empty)
 		{
+			SetHintText("Wait...");
+			yield return null;
+
 			FaceRectangle faceRect = face.faceRectangle;
 			byte[] imageBytes = texCamShot.EncodeToJPG();
 			yield return null;
 
 			AsyncTask<Person> task = new AsyncTask<Person>(() => {
-				return userManager.AddUserToGroup(userName, string.Empty, imageBytes, faceRect);
+				return userManager.AddUserToGroup(userName, userInfo, imageBytes, faceRect);
 			});
 
 			task.Start();
@@ -419,12 +376,8 @@ public class CloudUserRecognizer : MonoBehaviour
 
 			if(!string.IsNullOrEmpty(task.ErrorMessage))
 			{
+				SetHintText(task.ErrorMessage);
 				Debug.LogError(task.ErrorMessage);
-
-				if(hintText)
-				{
-					hintText.text = task.ErrorMessage;
-				}
 			}
 			else if(person != null && person.persistedFaceIds != null && person.persistedFaceIds.Length > 0)
 			{
@@ -454,21 +407,41 @@ public class CloudUserRecognizer : MonoBehaviour
 					Debug.Log(string.Format("Face {0} not found.", faceId));
 				}
 
-				if(hintText != null)
-				{
-					hintText.text = string.Format("User '{0}' created successfully.", userName);
-				}
+				SetHintText(string.Format("'{0}' created successfully.", userName));
+				ShowIdentityResult();
 			}
 			else
 			{
-				if(hintText != null)
-				{
-					hintText.text = "Face could not be added.";
-				}
+				SetHintText("User could not be created.");
 			}
 		}
 
 		yield return null;
 	}
+
+    // clear the list of displayed identity results
+    private void ClearIdentityResult()
+    {
+		foreach(GameObject panel in personsPanels.Values)
+		{
+			panel.transform.SetParent(null, false);
+			Destroy(panel);
+		}
+
+		personsPanels.Clear();
+    }
+
+    // displays hint or status text
+    private void SetHintText(string sHintText)
+    {
+        if (hintText)
+        {
+            hintText.text = sHintText;
+        }
+        else
+        {
+            Debug.Log(sHintText);
+        }
+    }
 
 }

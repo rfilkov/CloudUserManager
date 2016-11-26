@@ -13,10 +13,10 @@ public interface ImageSourceInterface
 	Texture2D GetImage();
 
 	/// <summary>
-	/// Gets the transform.
+	/// Determines whether the image source camera is working.
 	/// </summary>
-	/// <returns>The transform.</returns>
-	Transform GetTransform();
+	/// <returns><c>true</c> if the image source camera is working; otherwise, <c>false</c>.</returns>
+	bool HasCamera();
 }
 
 

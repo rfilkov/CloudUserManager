@@ -3,12 +3,12 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Text;
 
-public class UIFaceDetectionDemo : MonoBehaviour
+public class CloudFaceDetector : MonoBehaviour
 {
-    [Tooltip("UIWebCam source used for camera shots.")]
-    public UIWebcamSource webcamSource;
+	[Tooltip("Image source component used for making camera shots.")]
+	public WebcamSource webcamSource;
 
-    [Tooltip("UI RawImage used for camera shot rendering.")]
+	[Tooltip("Image component used for rendering camera shots")]
     public RawImage cameraShot;
 
 	[Tooltip("Whether to recognize the emotions of the detected faces, or not.")]
@@ -20,10 +20,10 @@ public class UIFaceDetectionDemo : MonoBehaviour
 	[Tooltip("Whether to draw arrow pointing to the head direction.")]
 	public bool displayHeadDirection = false;
 
-	[Tooltip("UI Text used for hints and status messages.")]
+	[Tooltip("Text component used for displaying hints and status messages.")]
     public Text hintText;
 
-    [Tooltip("UI Text used to display result.")]
+    [Tooltip("Text component used to display face-detection results.")]
     public Text resultText;
 
     // whether webcamSource has been set or there is web camera at all
@@ -42,7 +42,7 @@ public class UIFaceDetectionDemo : MonoBehaviour
             ratioFitter = cameraShot.GetComponent<AspectRatioFitter>();
         }
 
-        hasCamera = webcamSource && webcamSource.HasCamera;
+		hasCamera = webcamSource != null && webcamSource.HasCamera();
 
         hintMessage = hasCamera ? "Click on the camera image to make a shot" : "No camera found";
         
@@ -55,10 +55,9 @@ public class UIFaceDetectionDemo : MonoBehaviour
         if (!hasCamera) 
 			return;
         
-        ClearResultText();
-
         if (DoCameraShot())
         {
+			ClearResultText();
             StartCoroutine(DoFaceDetection());
         }        
     }
@@ -66,10 +65,9 @@ public class UIFaceDetectionDemo : MonoBehaviour
     // camera-shot panel onclick event handler
     public void OnShotClick()
     {
-        ClearResultText();
-
         if (DoImageImport())
         {
+			ClearResultText();
             StartCoroutine(DoFaceDetection());
         }
     }
@@ -77,9 +75,9 @@ public class UIFaceDetectionDemo : MonoBehaviour
     // camera shot step
     private bool DoCameraShot()
     {
-        if (cameraShot && webcamSource)
+        if (cameraShot != null && webcamSource != null)
         {
-            SetShotImageTexture(webcamSource.GetSnapshot());
+            SetShotImageTexture(webcamSource.GetImage());
             return true;
         }
 
