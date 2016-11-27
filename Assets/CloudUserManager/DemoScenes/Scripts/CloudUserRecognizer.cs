@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 public class CloudUserRecognizer : MonoBehaviour
 {
     [Tooltip("Image source component used for making camera shots.")]
-	public WebcamSource webcamSource;
+	public WebcamSource imageSource;
 
     [Tooltip("Image component used for rendering camera shots.")]
     public RawImage cameraShot;
@@ -52,7 +52,7 @@ public class CloudUserRecognizer : MonoBehaviour
             ratioFitter = cameraShot.GetComponent<AspectRatioFitter>();
         }
 
-		hasCamera = webcamSource != null && webcamSource.HasCamera();
+		hasCamera = imageSource != null && imageSource.HasCamera();
 
         hintMessage = hasCamera ? "Click on the camera image to make a shot" : "No camera found";
         
@@ -83,9 +83,9 @@ public class CloudUserRecognizer : MonoBehaviour
     // camera shot step
     private bool DoCameraShot()
     {
-        if (cameraShot != null && webcamSource != null)
+        if (cameraShot != null && imageSource != null)
         {
-            SetShotImageTexture(webcamSource.GetImage());
+            SetShotImageTexture(imageSource.GetImage());
             return true;
         }
 
@@ -271,8 +271,11 @@ public class CloudUserRecognizer : MonoBehaviour
 
 		if(p != null)
 		{
+			Dictionary<string, string> dUserData = CloudUserManager.ConvertInfoToDict(p.userData);
+			string sUserInfo = dUserData.ContainsKey("UserInfo") ? dUserData["UserInfo"] : string.Empty;
+
 			GameObject userInfoObj = userItemInstance.transform.Find("UserInfo").gameObject;
-			userInfoObj.GetComponent<Text>().text = p.userData;
+			userInfoObj.GetComponent<Text>().text = sUserInfo;
 			userInfoObj.SetActive(true);
 
 			GameObject loginBtnObj = userItemInstance.transform.Find("LoginButton").gameObject;
@@ -342,7 +345,24 @@ public class CloudUserRecognizer : MonoBehaviour
 
 	private void OnSaveUserClick(Face f, InputField saveNameInput, InputField safeInfoInput)
 	{
-		StartCoroutine(AddUserToGroup(f, saveNameInput.text, safeInfoInput.text));
+		Dictionary<string, string> dUserInfo = new Dictionary<string, string>();
+
+		if(!string.IsNullOrEmpty(safeInfoInput.text))
+		{
+			dUserInfo["UserInfo"] = safeInfoInput.text;
+		}
+
+		if(f != null && f.faceAttributes != null)
+		{
+			dUserInfo["Gender"] = f.faceAttributes.gender;
+			dUserInfo["Age"] = f.faceAttributes.age.ToString();
+			//dUserInfo["Smile"] = string.Format("{0:F3}", f.faceAttributes.smile);
+			dUserInfo["Created"] = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+		}
+
+		string sUserInfo = CloudUserManager.ConvertDictToInfo(dUserInfo);
+
+		StartCoroutine(AddUserToGroup(f, saveNameInput.text, sUserInfo));
 	}
 
 	// adds the new user to user group
@@ -388,7 +408,7 @@ public class CloudUserRecognizer : MonoBehaviour
 				{
 					if(faces[i].faceId == faceId)
 					{
-						if(faces[i].candidate == null)
+						if(faces[i].candidate == null || faces[i].candidate.person == null)
 						{
 							faces[i].candidate = new Candidate();
 

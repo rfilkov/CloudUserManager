@@ -53,6 +53,7 @@ public class CloudPersonsManager : MonoBehaviour
     {
         string personName = PersonNameInputValue;
         string userData = PersonUserDataInputValue;
+		userData = userData.Replace("\r\n", "|").Trim();
 
         if (personName.Trim().Length == 0)
         {
@@ -461,7 +462,10 @@ public class CloudPersonsManager : MonoBehaviour
     private void LoadPersonDetails(Person p)
     {
         PersonNameInputValue = p != null ? p.name : "";
-        PersonUserDataInputValue = p != null ? p.userData : "";
+
+		string userInfo = p != null && p.userData != null ? p.userData.Replace("|", "\r\n") : "";
+		PersonUserDataInputValue = userInfo;
+
         PersonFaceIdText = p != null && p.persistedFaceIds != null && p.persistedFaceIds.Length > 0 ? ("FaceID: " + p.persistedFaceIds[0].ToString()) : "No Face ID";
         PersonIdText = p != null && p.personId != string.Empty ? p.personId : "";
     }

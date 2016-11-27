@@ -24,6 +24,15 @@ public class CloudUserData : MonoBehaviour
 	}
 
 
+	/// <summary>
+	/// Clears the selected user.
+	/// </summary>
+	public void ClearSelectedUser()
+	{
+		selectedUser = null;
+	}
+
+
 	private void Awake()
 	{
 		if(instance == null)

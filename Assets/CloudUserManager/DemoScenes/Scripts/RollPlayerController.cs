@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System.Collections;
+
 
 public class RollPlayerController : MonoBehaviour 
 {
@@ -23,6 +25,7 @@ public class RollPlayerController : MonoBehaviour
 
 		// show the logged-in user
 		CloudUserData userData = CloudUserData.Instance;
+
 		string userLogged = "No user logged in";
 		Texture2D userLoggedImage = null;
 
@@ -39,7 +42,8 @@ public class RollPlayerController : MonoBehaviour
 		if(userImage)
 			userImage.texture = userLoggedImage;
 	}
-	
+
+
 	void Update () 
 	{
 		float h = Input.GetAxis ("Horizontal");
@@ -52,6 +56,7 @@ public class RollPlayerController : MonoBehaviour
 			rb.AddForce (0, 300, 0);
 		}
 	}
+
 
 	void OnTriggerEnter(Collider other) 
 	{
@@ -66,6 +71,27 @@ public class RollPlayerController : MonoBehaviour
 			if(counterText)
 				counterText.text = "YOU WIN!";
 		}
+	}
+
+
+	// invoked when the logout button gets pressed
+	public void OnLogoutPressed()
+	{
+		CloudUserData userData = CloudUserData.Instance;
+
+		if(userData && userData.selectedUser != null)
+		{
+			userData.ClearSelectedUser();
+		}
+
+		// show the user name and image
+		if(userText)
+			userText.text = "No user logged in";
+		if(userImage)
+			userImage.texture = null;
+
+		// go back tp the login-scene
+		SceneManager.LoadScene(0);
 	}
 
 }

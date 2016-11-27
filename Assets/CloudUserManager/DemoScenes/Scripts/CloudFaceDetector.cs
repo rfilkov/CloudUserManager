@@ -6,7 +6,7 @@ using System.Text;
 public class CloudFaceDetector : MonoBehaviour
 {
 	[Tooltip("Image source component used for making camera shots.")]
-	public WebcamSource webcamSource;
+	public WebcamSource imageSource;
 
 	[Tooltip("Image component used for rendering camera shots")]
     public RawImage cameraShot;
@@ -17,8 +17,8 @@ public class CloudFaceDetector : MonoBehaviour
 //	[Tooltip("Whether to draw rectangles around the detected faces on the picture.")]
 //	public bool displayFaceRectangles = true;
 
-	[Tooltip("Whether to draw arrow pointing to the head direction.")]
-	public bool displayHeadDirection = false;
+//	[Tooltip("Whether to draw arrow pointing to the head direction.")]
+//	public bool displayHeadDirection = false;
 
 	[Tooltip("Text component used for displaying hints and status messages.")]
     public Text hintText;
@@ -42,7 +42,7 @@ public class CloudFaceDetector : MonoBehaviour
             ratioFitter = cameraShot.GetComponent<AspectRatioFitter>();
         }
 
-		hasCamera = webcamSource != null && webcamSource.HasCamera();
+		hasCamera = imageSource != null && imageSource.HasCamera();
 
         hintMessage = hasCamera ? "Click on the camera image to make a shot" : "No camera found";
         
@@ -75,9 +75,9 @@ public class CloudFaceDetector : MonoBehaviour
     // camera shot step
     private bool DoCameraShot()
     {
-        if (cameraShot != null && webcamSource != null)
+        if (cameraShot != null && imageSource != null)
         {
-            SetShotImageTexture(webcamSource.GetImage());
+            SetShotImageTexture(imageSource.GetImage());
             return true;
         }
 

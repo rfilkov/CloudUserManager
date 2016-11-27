@@ -75,6 +75,16 @@ public class WebcamSource : MonoBehaviour, ImageSourceInterface
 	}
 
 
+	void OnDisable()
+	{
+		if(webcamTex)
+		{
+			webcamTex.Stop();
+			webcamTex = null;
+		}
+	}
+
+
 	/// <summary>
 	/// Gets the image as texture2d.
 	/// </summary>

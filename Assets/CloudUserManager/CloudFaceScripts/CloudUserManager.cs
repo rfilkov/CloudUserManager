@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Text;
 using System;
 
 public class CloudUserManager : MonoBehaviour 
@@ -224,24 +225,32 @@ public class CloudUserManager : MonoBehaviour
 			TrainingStatus training = faceManager.GetPersonGroupTrainingStatus(userGroupId);
 			bool bEmptyGroup = false;
 
-			if(training != null && training.status == Status.Failed)
+			if(training != null)
 			{
-				// check if there are persons in this group
-				List<Person> listPersons = GetUsersList();
+				if(training.status == Status.Failed)
+				{
+					// check if there are persons in this group
+					List<Person> listPersons = GetUsersList();
 
-				if(listPersons.Count > 0)
-				{
-					// retrain the group
-					faceManager.TrainPersonGroup(userGroupId);
+					if(listPersons.Count > 0)
+					{
+						// retrain the group
+						faceManager.TrainPersonGroup(userGroupId);
+					}
+					else
+					{
+						// empty group - always returns 'training failed'
+						training.status = Status.Succeeded;
+						bEmptyGroup = true;
+					}
 				}
-				else
+				else if(training.status == Status.Succeeded && training.message.StartsWith("There is no person"))
 				{
-					// empty list - always returns 'training failed'
-					training.status = Status.Succeeded;
+					// the group exists but it's empty
 					bEmptyGroup = true;
 				}
 			}
-			
+
 			DateTime waitTill = DateTime.Now.AddSeconds(5);
 			while((training == null || training.status != Status.Succeeded) && (DateTime.Now < waitTill))
 			{
@@ -375,7 +384,19 @@ public class CloudUserManager : MonoBehaviour
 					person.persistedFaceIds = new string[1];
 					person.persistedFaceIds[0] = personFace.persistedFaceId;
 
+					// train the group
 					faceManager.TrainPersonGroup(userGroupId);
+
+					// wait for training to complete
+					bool isTrained = false;
+					int retries = 0;
+
+					while (!isTrained && retries++ < 5)
+					{
+						Thread.Sleep(1000);
+						isTrained = faceManager.IsPersonGroupTrained(userGroupId);
+					}
+
 				}
 			}
 
@@ -492,6 +513,66 @@ public class CloudUserManager : MonoBehaviour
 			faceManager.DeletePerson(userGroupId, person.personId);
 			faceManager.TrainPersonGroup(userGroupId);
 		}
+	}
+
+
+	/// <summary>
+	/// Converts user info string to dictionary.
+	/// </summary>
+	/// <returns>The user information dictionary.</returns>
+	/// <param name="userInfo">User info.</param>
+	public static Dictionary<string, string> ConvertInfoToDict(string userInfo)
+	{
+		Dictionary<string, string> dUserInfos = new Dictionary<string, string>();
+
+		if(!string.IsNullOrEmpty(userInfo))
+		{
+			string[] asUserInfo = userInfo.Split("|".ToCharArray());
+
+			for(int i = 0; i < asUserInfo.Length; i++)
+			{
+				int iIndex = asUserInfo[i].IndexOf("=");
+
+				if(iIndex > 0)
+				{
+					string sName = asUserInfo[i].Substring(0, iIndex);
+					string sValue = asUserInfo[i].Substring(iIndex + 1);
+
+					dUserInfos[sName] = sValue;
+				}
+				else if(asUserInfo[i].Length > 0 && !dUserInfos.ContainsKey("UserInfo"))
+				{
+					dUserInfos["UserInfo"] = asUserInfo[i];
+				}
+			}
+		}
+
+		return dUserInfos;
+	}
+
+
+	/// <summary>
+	/// Converts the dictionary of user infos to string.
+	/// </summary>
+	/// <returns>The user info as string.</returns>
+	/// <param name="dUserInfos">Dictionary of user infos.</param>
+	public static string ConvertDictToInfo(Dictionary<string, string> dUserInfos)
+	{
+		StringBuilder sbUserInfo = new StringBuilder();
+
+		if(dUserInfos != null)
+		{
+			foreach(string sName in dUserInfos.Keys)
+			{
+				if(sbUserInfo.Length > 0)
+					sbUserInfo.Append("|");
+
+				string sValue = dUserInfos[sName];
+				sbUserInfo.AppendFormat("{0}={1}", sName, sValue);
+			}
+		}
+
+		return sbUserInfo.ToString();
 	}
 	
 	
