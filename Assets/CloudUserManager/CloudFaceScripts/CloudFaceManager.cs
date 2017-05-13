@@ -18,8 +18,10 @@ public class CloudFaceManager : MonoBehaviour
 	[Tooltip("Subscription key for Emotion API.")]
 	public string emotionSubscriptionKey;
 
-	private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
-	private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
+	//private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
+	//private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
+	private const string FaceServiceHost = "https://westus.api.cognitive.microsoft.com/face/v1.0";
+	private const string EmotionServiceHost = "https://westus.api.cognitive.microsoft.com/emotion/v1.0";
 
 	private const int threadWaitLoops = 25;  // 25 * 200ms = 5.0s
 	private const int threadWaitMs = 200;
