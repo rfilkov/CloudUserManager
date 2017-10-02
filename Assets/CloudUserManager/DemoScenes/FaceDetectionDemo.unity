@@ -911,6 +911,7 @@ GameObject:
   - component: {fileID: 436747332}
   - component: {fileID: 436747331}
   - component: {fileID: 436747333}
+  - component: {fileID: 436747334}
   m_Layer: 0
   m_Name: Content
   m_TagString: Untagged
@@ -957,10 +958,10 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 14
+    m_FontSize: 16
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 1
     m_MaxSize: 40
     m_Alignment: 0
     m_AlignByGeometry: 0
@@ -988,6 +989,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &436747334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 436747329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1573420865, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &499693969
 GameObject:
   m_ObjectHideFlags: 0
@@ -1822,8 +1837,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021d0c8baf15c424598773a0208dfbcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faceSubscriptionKey: bb401cb0aefa4e69a9b8922ba0a25833
-  emotionSubscriptionKey: d83c02b5fe4c4ff0944f6f73d9f6f804
+  faceServiceLocation: westus
+  faceSubscriptionKey: d2da5ab1197b42c7b2f5692ec03240a2
+  emotionServiceLocation: westus
+  emotionSubscriptionKey: 4b6a011cc0504fc6afc89a7d40bb025c
 --- !u!4 &1994599328
 Transform:
   m_ObjectHideFlags: 0

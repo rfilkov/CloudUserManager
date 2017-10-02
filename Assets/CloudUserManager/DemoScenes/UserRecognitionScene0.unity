@@ -1474,7 +1474,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021d0c8baf15c424598773a0208dfbcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faceSubscriptionKey: bb401cb0aefa4e69a9b8922ba0a25833
+  faceServiceLocation: westus
+  faceSubscriptionKey: d2da5ab1197b42c7b2f5692ec03240a2
+  emotionServiceLocation: westus
   emotionSubscriptionKey: 
 --- !u!4 &1340451122
 Transform:

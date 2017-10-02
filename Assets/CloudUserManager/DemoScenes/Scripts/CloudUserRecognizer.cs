@@ -345,11 +345,12 @@ public class CloudUserRecognizer : MonoBehaviour
 
 	private void OnSaveUserClick(Face f, InputField saveNameInput, InputField safeInfoInput)
 	{
+		// create user info string
 		Dictionary<string, string> dUserInfo = new Dictionary<string, string>();
 
-		if(!string.IsNullOrEmpty(safeInfoInput.text))
+		if(safeInfoInput.text != null && safeInfoInput.text.Trim() != string.Empty)
 		{
-			dUserInfo["UserInfo"] = safeInfoInput.text;
+			dUserInfo["UserInfo"] = safeInfoInput.text.Trim();
 		}
 
 		if(f != null && f.faceAttributes != null)
@@ -362,15 +363,16 @@ public class CloudUserRecognizer : MonoBehaviour
 
 		string sUserInfo = CloudUserManager.ConvertDictToInfo(dUserInfo);
 
+		// create the user
 		StartCoroutine(AddUserToGroup(f, saveNameInput.text, sUserInfo));
 	}
 
-	// adds the new user to user group
+	// creates new user and adds it to the user group
 	private IEnumerator AddUserToGroup(Face face, string userName, string userInfo)
 	{
 		CloudUserManager userManager = CloudUserManager.Instance;
 
-		if(texCamShot && userManager && face != null && userName != string.Empty)
+		if(texCamShot && userManager && face != null && userName != null && userName.Trim() != string.Empty)
 		{
 			SetHintText("Wait...");
 			yield return null;
@@ -380,7 +382,7 @@ public class CloudUserRecognizer : MonoBehaviour
 			yield return null;
 
 			AsyncTask<Person> task = new AsyncTask<Person>(() => {
-				return userManager.AddUserToGroup(userName, userInfo, imageBytes, faceRect);
+				return userManager.AddUserToGroup(userName.Trim(), userInfo, imageBytes, faceRect);
 			});
 
 			task.Start();
@@ -427,7 +429,7 @@ public class CloudUserRecognizer : MonoBehaviour
 					Debug.Log(string.Format("Face {0} not found.", faceId));
 				}
 
-				SetHintText(string.Format("'{0}' created successfully.", userName));
+				SetHintText(string.Format("'{0}' created successfully.", userName.Trim()));
 				ShowIdentityResult();
 			}
 			else

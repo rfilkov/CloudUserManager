@@ -12,16 +12,22 @@ using System.Threading;
 
 public class CloudFaceManager : MonoBehaviour 
 {
+	[Tooltip("Service location for Face API.")]
+	public string faceServiceLocation = "westus";
+
 	[Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
-	
+
+	[Tooltip("Service location for Emotion API.")]
+	public string emotionServiceLocation = "westus";
+
 	[Tooltip("Subscription key for Emotion API.")]
 	public string emotionSubscriptionKey;
 
 	//private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
 	//private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
-	private const string FaceServiceHost = "https://westus.api.cognitive.microsoft.com/face/v1.0";
-	private const string EmotionServiceHost = "https://westus.api.cognitive.microsoft.com/emotion/v1.0";
+	private const string FaceServiceHost = "https://[location].api.cognitive.microsoft.com/face/v1.0";
+	private const string EmotionServiceHost = "https://[location].api.cognitive.microsoft.com/emotion/v1.0";
 
 	private const int threadWaitLoops = 25;  // 25 * 200ms = 5.0s
 	private const int threadWaitMs = 200;
@@ -54,7 +60,6 @@ public class CloudFaceManager : MonoBehaviour
 		}
 	}
 
-
 	/// <summary>
 	/// Determines whether the FaceManager is initialized.
 	/// </summary>
@@ -63,6 +68,27 @@ public class CloudFaceManager : MonoBehaviour
 	{
 		return isInitialized;
 	}
+
+	/// <summary>
+	/// Gets the face service URL.
+	/// </summary>
+	/// <returns>The face service URL.</returns>
+	public string GetFaceServiceUrl()
+	{
+		string faceServiceUrl = FaceServiceHost.Replace("[location]", faceServiceLocation);
+		return faceServiceUrl;
+	}
+
+	/// <summary>
+	/// Gets the emotion service URL.
+	/// </summary>
+	/// <returns>The emotion service URL.</returns>
+	public string GetEmotionServiceUrl()
+	{
+		string emotServiceUrl = EmotionServiceHost.Replace("[location]", emotionServiceLocation);
+		return emotServiceUrl;
+	}
+
 
 
 	/// <summary>
@@ -93,7 +119,7 @@ public class CloudFaceManager : MonoBehaviour
 		}
 
 		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
-			FaceServiceHost, true, false, "age,gender,smile,headPose");
+			GetFaceServiceUrl(), true, false, "age,gender,smile,headPose");
 
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -155,10 +181,13 @@ public class CloudFaceManager : MonoBehaviour
 				faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.left, rect.top, rect.width, rect.height);
 			}
 
-			faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
+			if(faceRectsStr.Length > 0)
+			{
+				faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
+			}
 		}
 
-		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", EmotionServiceHost, faceRectsStr);
+		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", GetEmotionServiceUrl(), faceRectsStr);
 
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
@@ -215,79 +244,6 @@ public class CloudFaceManager : MonoBehaviour
 	}
 	
 	
-	/// <summary>
-	/// Gets the emotion scores as string.
-	/// </summary>
-	/// <returns>The emotion as string.</returns>
-	/// <param name="emotion">Emotion.</param>
-	public static string GetEmotionScoresAsString(Emotion emotion)
-	{
-		if(emotion == null || emotion.scores == null)
-			return string.Empty;
-		
-		Scores es = emotion.scores; 
-		StringBuilder emotStr = new StringBuilder();
-		
-		if(es.anger >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% angry,", es.anger * 100f);
-		if(es.contempt >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% contemptuous,", es.contempt * 100f);
-		if(es.disgust >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% disgusted,", es.disgust * 100f);
-		if(es.fear >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% scared,", es.fear * 100f);
-		if(es.happiness >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% happy,", es.happiness * 100f);
-		if(es.neutral >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% neutral,", es.neutral * 100f);
-		if(es.sadness >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% sad,", es.sadness * 100f);
-		if(es.surprise >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% surprised,", es.surprise * 100f);
-		
-		if(emotStr.Length > 0)
-		{
-			emotStr.Remove(0, 1);
-			emotStr.Remove(emotStr.Length - 1, 1);
-		}
-		
-		return emotStr.ToString();
-	}
-	
-	
-	/// <summary>
-	/// Gets the emotion scores as list of strings.
-	/// </summary>
-	/// <returns>The emotion as string.</returns>
-	/// <param name="emotion">Emotion.</param>
-	public static List<string> GetEmotionScoresList(Emotion emotion)
-	{
-		List<string> alScores = new List<string>();
-		if(emotion == null || emotion.scores == null)
-			return alScores;
-		
-		Scores es = emotion.scores; 
-		
-		if(es.anger >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% angry", es.anger * 100f));
-		if(es.contempt >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% contemptuous", es.contempt * 100f));
-		if(es.disgust >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% disgusted,", es.disgust * 100f));
-		if(es.fear >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% scared", es.fear * 100f));
-		if(es.happiness >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% happy", es.happiness * 100f));
-		if(es.neutral >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% neutral", es.neutral * 100f));
-		if(es.sadness >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% sad", es.sadness * 100f));
-		if(es.surprise >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% surprised", es.surprise * 100f));
-		
-		return alScores;
-	}
-
 
 	/// <summary>
 	/// Gets the standard face colors.
@@ -400,7 +356,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -432,7 +388,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -467,7 +423,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -506,7 +462,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -549,7 +505,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, personId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, personId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -607,7 +563,7 @@ public class CloudFaceManager : MonoBehaviour
 		}
 
 		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.left, faceRect.top, faceRect.width, faceRect.height) : string.Empty;
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", FaceServiceHost, groupId, personId, userData, sFaceRect);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", GetFaceServiceUrl(), groupId, personId, userData, sFaceRect);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -644,7 +600,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, person.personId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, person.personId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -672,7 +628,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", FaceServiceHost, groupId, personId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, personId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -698,7 +654,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/train", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/train", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -741,7 +697,7 @@ public class CloudFaceManager : MonoBehaviour
 			throw new Exception("The face-subscription key is not set.");
 		}
 		
-		string requestUrl = string.Format("{0}/persongroups/{1}/training", FaceServiceHost, groupId);
+		string requestUrl = string.Format("{0}/persongroups/{1}/training", GetFaceServiceUrl(), groupId);
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -788,7 +744,7 @@ public class CloudFaceManager : MonoBehaviour
 			maxCandidates = 1;
 		}
 		
-		string requestUrl = string.Format("{0}/identify", FaceServiceHost);
+		string requestUrl = string.Format("{0}/identify", GetFaceServiceUrl());
 		
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
