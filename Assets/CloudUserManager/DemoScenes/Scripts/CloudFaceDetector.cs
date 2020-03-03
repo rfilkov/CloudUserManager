@@ -12,7 +12,7 @@ public class CloudFaceDetector : MonoBehaviour
     public RawImage cameraShot;
 
 	[Tooltip("Whether to recognize the emotions of the detected faces, or not.")]
-	public bool recognizeEmotions = false;
+	private bool recognizeEmotions = false;
 
 //	[Tooltip("Whether to draw rectangles around the detected faces on the picture.")]
 //	public bool displayFaceRectangles = true;

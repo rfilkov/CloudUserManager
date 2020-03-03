@@ -7,3 +7,5 @@
 /UserFaceManagement.userprefs
 /obj/
 /Temp/
+/.vs/
+*.csproj

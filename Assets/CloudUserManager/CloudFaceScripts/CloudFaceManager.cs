@@ -12,22 +12,24 @@ using System.Threading;
 
 public class CloudFaceManager : MonoBehaviour 
 {
-	[Tooltip("Service location for Face API.")]
-	public string faceServiceLocation = "westus";
+	[Tooltip("Service endpoint.")]
+	//public string faceServiceLocation = "westus";
+    public string faceServiceEndpoint = string.Empty;
 
-	[Tooltip("Subscription key for Face API.")]
+
+    [Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
 
-	[Tooltip("Service location for Emotion API.")]
-	public string emotionServiceLocation = "westus";
+	//[Tooltip("Service location for Emotion API.")]
+	//public string emotionServiceLocation = "westus";
 
-	[Tooltip("Subscription key for Emotion API.")]
-	public string emotionSubscriptionKey;
+	//[Tooltip("Subscription key for Emotion API.")]
+	//public string emotionSubscriptionKey;
 
 	//private const string FaceServiceHost = "https://api.projectoxford.ai/face/v1.0";
 	//private const string EmotionServiceHost = "https://api.projectoxford.ai/emotion/v1.0";
-	private const string FaceServiceHost = "https://[location].api.cognitive.microsoft.com/face/v1.0";
-	private const string EmotionServiceHost = "https://[location].api.cognitive.microsoft.com/emotion/v1.0";
+	//private const string FaceServiceHost = "https://[location].api.cognitive.microsoft.com/face/v1.0";
+	//private const string EmotionServiceHost = "https://[location].api.cognitive.microsoft.com/emotion/v1.0";
 
 	private const int threadWaitLoops = 25;  // 25 * 200ms = 5.0s
 	private const int threadWaitMs = 200;
@@ -75,19 +77,23 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The face service URL.</returns>
 	public string GetFaceServiceUrl()
 	{
-		string faceServiceUrl = FaceServiceHost.Replace("[location]", faceServiceLocation);
-		return faceServiceUrl;
+        string faceServiceUrl = faceServiceEndpoint.Trim(); // FaceServiceHost.Replace("[location]", faceServiceLocation);
+        if (faceServiceUrl.EndsWith("/"))
+            faceServiceUrl = faceServiceUrl.Substring(0, faceServiceUrl.Length - 1);
+        faceServiceUrl += "/face/v1.0";
+
+        return faceServiceUrl;
 	}
 
-	/// <summary>
-	/// Gets the emotion service URL.
-	/// </summary>
-	/// <returns>The emotion service URL.</returns>
-	public string GetEmotionServiceUrl()
-	{
-		string emotServiceUrl = EmotionServiceHost.Replace("[location]", emotionServiceLocation);
-		return emotServiceUrl;
-	}
+	///// <summary>
+	///// Gets the emotion service URL.
+	///// </summary>
+	///// <returns>The emotion service URL.</returns>
+	//public string GetEmotionServiceUrl()
+	//{
+	//	string emotServiceUrl = EmotionServiceHost.Replace("[location]", emotionServiceLocation);
+	//	return emotServiceUrl;
+	//}
 
 
 
@@ -168,7 +174,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
 	public Emotion[] RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
 	{
-		if(string.IsNullOrEmpty(emotionSubscriptionKey))
+		if(string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The emotion-subscription key is not set.");
 		}
@@ -187,10 +193,10 @@ public class CloudFaceManager : MonoBehaviour
 			}
 		}
 
-		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", GetEmotionServiceUrl(), faceRectsStr);
+		string requestUrl = string.Format("{0}/recognize??faceRectangles={1}", GetFaceServiceUrl(), faceRectsStr);
 
 		Dictionary<string, string> headers = new Dictionary<string, string>();
-		headers.Add("ocp-apim-subscription-key", emotionSubscriptionKey);
+		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 
