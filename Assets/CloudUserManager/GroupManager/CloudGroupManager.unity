@@ -560,8 +560,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021d0c8baf15c424598773a0208dfbcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faceServiceEndpoint: https://firu-cognitive-services-face.cognitiveservices.azure.com/
-  faceSubscriptionKey: 42f448170b5544a3b702a7f4e7979c9b
+  faceServiceEndpoint: 
+  faceSubscriptionKey: 
 --- !u!114 &180682181
 MonoBehaviour:
   m_ObjectHideFlags: 0

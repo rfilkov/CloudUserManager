@@ -1873,10 +1873,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021d0c8baf15c424598773a0208dfbcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faceServiceEndpoint: https://firu-cognitive-services-face.cognitiveservices.azure.com/
-  faceSubscriptionKey: 42f448170b5544a3b702a7f4e7979c9b
-  emotionServiceLocation: westus
-  emotionSubscriptionKey: 
+  faceServiceEndpoint: 
+  faceSubscriptionKey: 
 --- !u!4 &1994599328
 Transform:
   m_ObjectHideFlags: 0
@@ -1903,7 +1901,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   imageSource: {fileID: 499693971}
   cameraShot: {fileID: 412615781}
-  recognizeEmotions: 1
   hintText: {fileID: 275030062}
   resultText: {fileID: 436747331}
 --- !u!1 &2024661356
