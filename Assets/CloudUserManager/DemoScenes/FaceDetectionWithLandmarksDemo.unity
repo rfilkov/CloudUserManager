@@ -2031,7 +2031,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   faceLandmarks: []
-  LandmarkVisualizationPrefab: {fileID: 906684967613109727, guid: fe208279e037ea741827279e77a17240,
+  LandmarkVisualizationPrefab: {fileID: 1620026274983886, guid: fe208279e037ea741827279e77a17240,
     type: 2}
   ParentVisualizer: {fileID: 590488026}
   VisualizerCopySizeFrom: {fileID: 290646378}
@@ -2047,7 +2047,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1994599326}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6478922148618a74989905c981b55579, type: 3}
+  m_Script: {fileID: 11500000, guid: 04a94c03c1cfe0542abcd89a47f56b50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   imageSource: {fileID: 499693971}

@@ -35,6 +35,10 @@ public class CloudFaceDetector : MonoBehaviour
     // AspectRatioFitter component;
     private AspectRatioFitter ratioFitter;
 
+
+    // added by shachar oz
+    private FaceLandmarkVisualizer faceLandmarkVisualizer;
+
     void Start()
     {
         if (cameraShot)
@@ -47,6 +51,9 @@ public class CloudFaceDetector : MonoBehaviour
         hintMessage = hasCamera ? "Click on the camera image to make a shot" : "No camera found";
         
         SetHintText(hintMessage);
+
+
+        faceLandmarkVisualizer = FindObjectOfType<FaceLandmarkVisualizer>();
     }
 
     // camera panel onclick event handler
@@ -137,7 +144,9 @@ public class CloudFaceDetector : MonoBehaviour
 			{
 				faces = taskFace.Result;
 
-				if(faces != null && faces.Length > 0)
+                if (faceLandmarkVisualizer) faceLandmarkVisualizer.SetTextureSize(texCamShot.width, texCamShot.height);
+
+                if (faces != null && faces.Length > 0)
 				{
 					// stick to detected face rectangles
 					FaceRectangle[] faceRects = new FaceRectangle[faces.Length];
@@ -145,9 +154,12 @@ public class CloudFaceDetector : MonoBehaviour
 					for(int i = 0; i < faces.Length; i++)
 					{
 						faceRects[i] = faces[i].faceRectangle;
-					}
 
-					yield return null;
+                        if (faceLandmarkVisualizer) faceLandmarkVisualizer.VisualizeFaceNow(faces[i].faceLandmarks);
+                    }
+
+
+                    yield return null;
 
 					// get the emotions of the faces
 					if(recognizeEmotions)
