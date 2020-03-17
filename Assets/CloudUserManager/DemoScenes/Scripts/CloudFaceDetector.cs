@@ -155,7 +155,7 @@ public class CloudFaceDetector : MonoBehaviour
 					{
 						faceRects[i] = faces[i].faceRectangle;
 
-                        if (faceLandmarkVisualizer) faceLandmarkVisualizer.VisualizeFaceNow(faces[i].faceLandmarks);
+                        if (faceLandmarkVisualizer) faceLandmarkVisualizer.VisualizeFaceLandmarksNow(faces[i].faceLandmarks);
                     }
 
 
