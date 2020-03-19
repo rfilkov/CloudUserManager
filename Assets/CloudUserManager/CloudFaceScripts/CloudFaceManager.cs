@@ -10,14 +10,13 @@ using System.Threading;
 //using Newtonsoft.Json;
 
 
-public class CloudFaceManager : MonoBehaviour 
+public class CloudFaceManager : MonoBehaviour
 {
-	[Tooltip("Service endpoint.")]
+	[Tooltip("Face service endpoint.")]
 	//public string faceServiceLocation = "westus";
-    public string faceServiceEndpoint = string.Empty;
+	public string faceServiceEndpoint = string.Empty;
 
-
-    [Tooltip("Subscription key for Face API.")]
+	[Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
 
 	//[Tooltip("Service location for Emotion API.")]
@@ -38,11 +37,20 @@ public class CloudFaceManager : MonoBehaviour
 	private bool isInitialized = false;
 
 
-	void Awake() 
+    /*  SHACHAR ADDITION */
+    [Tooltip("Whether to get the face landmarks info, as well.")]
+    public bool getFaceLandmarks = false;
+
+    [Tooltip("Whether to get the face IDs, as well.")]
+    public bool getFaceId = true;
+	/*  END SHACHAR ADDITION */
+
+
+	void Awake()
 	{
 		instance = this;
 
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("Please set your face-subscription key.");
 		}
@@ -77,12 +85,12 @@ public class CloudFaceManager : MonoBehaviour
 	/// <returns>The face service URL.</returns>
 	public string GetFaceServiceUrl()
 	{
-        string faceServiceUrl = faceServiceEndpoint.Trim(); // FaceServiceHost.Replace("[location]", faceServiceLocation);
-        if (faceServiceUrl.EndsWith("/"))
-            faceServiceUrl = faceServiceUrl.Substring(0, faceServiceUrl.Length - 1);
-        faceServiceUrl += "/face/v1.0";
+		string faceServiceUrl = faceServiceEndpoint.Trim(); // FaceServiceHost.Replace("[location]", faceServiceLocation);
+		if (faceServiceUrl.EndsWith("/"))
+			faceServiceUrl = faceServiceUrl.Substring(0, faceServiceUrl.Length - 1);
+		faceServiceUrl += "/face/v1.0";
 
-        return faceServiceUrl;
+		return faceServiceUrl;
 	}
 
 	///// <summary>
@@ -104,14 +112,14 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="texImage">Image texture.</param>
 	public Face[] DetectFaces(Texture2D texImage)
 	{
-		if(texImage == null)
+		if (texImage == null)
 			return null;
 
 		byte[] imageBytes = texImage.EncodeToJPG();
 		return DetectFaces(imageBytes);
 	}
-	
-	
+
+
 	/// <summary>
 	/// Detects the faces in the given image.
 	/// </summary>
@@ -119,13 +127,13 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="imageBytes">Image bytes.</param>
 	public Face[] DetectFaces(byte[] imageBytes)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
 
-		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}", 
-			GetFaceServiceUrl(), true, false, "age,gender,smile,headPose");
+		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}",
+			GetFaceServiceUrl(), getFaceId, getFaceLandmarks, "age,gender,smile,headPose");
 
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
@@ -133,7 +141,7 @@ public class CloudFaceManager : MonoBehaviour
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 
 		Face[] faces = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			//faces = JsonConvert.DeserializeObject<Face[]>(reader.ReadToEnd(), jsonSettings);
@@ -158,9 +166,9 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
 	public Emotion[] RecognizeEmotions(Texture2D texImage, FaceRectangle[] faceRects)
 	{
-		if(texImage == null)
+		if (texImage == null)
 			return null;
-		
+
 		byte[] imageBytes = texImage.EncodeToJPG();
 		return RecognizeEmotions(imageBytes, faceRects);
 	}
@@ -174,20 +182,20 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="faceRects">Detected face rectangles, or null.</param>
 	public Emotion[] RecognizeEmotions(byte[] imageBytes, FaceRectangle[] faceRects)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The emotion-subscription key is not set.");
 		}
 
 		StringBuilder faceRectsStr = new StringBuilder();
-		if(faceRects != null)
+		if (faceRects != null)
 		{
-			foreach(FaceRectangle rect in faceRects)
+			foreach (FaceRectangle rect in faceRects)
 			{
 				faceRectsStr.AppendFormat("{0},{1},{2},{3};", rect.left, rect.top, rect.width, rect.height);
 			}
 
-			if(faceRectsStr.Length > 0)
+			if (faceRectsStr.Length > 0)
 			{
 				faceRectsStr.Remove(faceRectsStr.Length - 1, 1); // drop the last semicolon
 			}
@@ -201,7 +209,7 @@ public class CloudFaceManager : MonoBehaviour
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
 
 		Emotion[] emotions = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			//emotions = JsonConvert.DeserializeObject<Emotion[]>(reader.ReadToEnd(), jsonSettings);
@@ -216,8 +224,8 @@ public class CloudFaceManager : MonoBehaviour
 
 		return emotions;
 	}
-	
-	
+
+
 	/// <summary>
 	/// Matches the recognized emotions to faces.
 	/// </summary>
@@ -227,16 +235,16 @@ public class CloudFaceManager : MonoBehaviour
 	public int MatchEmotionsToFaces(ref Face[] faces, ref Emotion[] emotions)
 	{
 		int matched = 0;
-		if(faces == null || emotions == null)
+		if (faces == null || emotions == null)
 			return matched;
-		
-		foreach(Emotion emot in emotions)
+
+		foreach (Emotion emot in emotions)
 		{
 			FaceRectangle emotRect = emot.faceRectangle;
-			
-			for(int i = 0; i < faces.Length; i++)
+
+			for (int i = 0; i < faces.Length; i++)
 			{
-				if(Mathf.Abs(emotRect.left - faces[i].faceRectangle.left) <= 2 &&
+				if (Mathf.Abs(emotRect.left - faces[i].faceRectangle.left) <= 2 &&
 				   Mathf.Abs(emotRect.top - faces[i].faceRectangle.top) <= 2)
 				{
 					faces[i].emotion = emot;
@@ -245,11 +253,11 @@ public class CloudFaceManager : MonoBehaviour
 				}
 			}
 		}
-		
+
 		return matched;
 	}
-	
-	
+
+
 
 	/// <summary>
 	/// Gets the standard face colors.
@@ -285,8 +293,8 @@ public class CloudFaceManager : MonoBehaviour
 
 		return faceColorNames;
 	}
-	
-	
+
+
 	// draw face rectangles
 	/// <summary>
 	/// Draws the face rectacgles in the given texture.
@@ -295,15 +303,15 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="tex">The camera shot texture</param>
 	public static void DrawFaceRects(Texture2D tex, Face[] faces, Color[] faceColors)
 	{
-		for(int i = 0; i < faces.Length; i++)
+		for (int i = 0; i < faces.Length; i++)
 		{
 			Face face = faces[i];
 			Color faceColor = faceColors[i % faceColors.Length];
-			
+
 			FaceRectangle rect = face.faceRectangle;
 			CloudTexTools.DrawRect(tex, rect.left, rect.top, rect.width, rect.height, faceColor);
 		}
-		
+
 		tex.Apply();
 	}
 
@@ -316,7 +324,7 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="face">The detected face</param>
 	public static Texture2D GetFaceTexture(Texture2D tex, ref Face face)
 	{
-		if(tex != null && face != null)
+		if (tex != null && face != null)
 		{
 			FaceRectangle rect = face.faceRectangle;
 			int texY = tex.height - rect.top - rect.height;
@@ -326,7 +334,7 @@ public class CloudFaceManager : MonoBehaviour
 
 		return null;
 	}
-	
+
 
 	/// <summary>
 	/// Matches the face images.
@@ -336,10 +344,10 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="faces">The array of detected faces.</param>
 	public static bool MatchFaceImages(Texture2D tex, ref Face[] faces)
 	{
-		if(tex == null || faces == null)
+		if (tex == null || faces == null)
 			return false;
 
-		for(int i = 0; i < faces.Length; i++)
+		for (int i = 0; i < faces.Length; i++)
 		{
 			faces[i].faceImage = GetFaceTexture(tex, ref faces[i]);
 		}
@@ -357,13 +365,13 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="userData">User data (max 16K).</param>
 	public bool CreatePersonGroup(string groupId, string groupName, string userData)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
 
@@ -371,16 +379,16 @@ public class CloudFaceManager : MonoBehaviour
 		string sJsonContent = JsonUtility.ToJson(new PersonGroupRequest(groupName, userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PUT", "application/json", btContent, headers, true, false);
-		
-		if(CloudWebTools.IsErrorStatus(response))
+
+		if (CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 			return false;
 		}
-		
+
 		return true;
 	}
-	
+
 
 	/// <summary>
 	/// Gets the person group.
@@ -389,20 +397,20 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="groupId">Group ID.</param>
 	public PersonGroup GetPersonGroup(string groupId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
-		
+
 		PersonGroup group = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			//group = JsonConvert.DeserializeObject<PersonGroup>(reader.ReadToEnd(), jsonSettings);
@@ -412,11 +420,11 @@ public class CloudFaceManager : MonoBehaviour
 		{
 			ProcessFaceError(response);
 		}
-		
+
 		return group;
 	}
-	
-	
+
+
 	/// <summary>
 	/// Lists the people in a person-group.
 	/// </summary>
@@ -424,20 +432,20 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="groupId">Person-group ID.</param>
 	public Person[] ListPersonsInGroup(string groupId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
 
 		Person[] persons = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			//persons = JsonConvert.DeserializeObject<Person[]>(reader.ReadToEnd(), jsonSettings);
@@ -452,7 +460,7 @@ public class CloudFaceManager : MonoBehaviour
 
 		return persons;
 	}
-	
+
 
 	/// <summary>
 	/// Adds the person to a group.
@@ -463,22 +471,22 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="userData">User data (max 16K).</param>
 	public Person AddPersonToGroup(string groupId, string personName, string userData)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		string sJsonContent = JsonUtility.ToJson(new PersonRequest(personName, userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
-		
+
 		Person person = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			person = JsonUtility.FromJson<Person>(reader.ReadToEnd());
@@ -496,7 +504,7 @@ public class CloudFaceManager : MonoBehaviour
 
 		return person;
 	}
-	
+
 
 	/// <summary>
 	/// Gets the person data.
@@ -506,20 +514,20 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="personId">Person ID.</param>
 	public Person GetPerson(string groupId, string personId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, personId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "application/json", null, headers, true, false);
-		
+
 		Person person = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			person = JsonUtility.FromJson<Person>(reader.ReadToEnd());
@@ -528,11 +536,11 @@ public class CloudFaceManager : MonoBehaviour
 		{
 			ProcessFaceError(response);
 		}
-		
+
 		return person;
 	}
-	
-	
+
+
 	/// <summary>
 	/// Adds the face to a person in a person-group.
 	/// </summary>
@@ -544,14 +552,14 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="imageBytes">Image bytes.</param>
 	public PersonFace AddFaceToPerson(string groupId, string personId, string userData, FaceRectangle faceRect, Texture2D texImage)
 	{
-		if(texImage == null)
+		if (texImage == null)
 			return null;
-		
+
 		byte[] imageBytes = texImage.EncodeToJPG();
 		return AddFaceToPerson(groupId, personId, userData, faceRect, imageBytes);
 	}
-	
-	
+
+
 	/// <summary>
 	/// Adds the face to a person in a person-group.
 	/// </summary>
@@ -563,21 +571,21 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="imageBytes">Image bytes.</param>
 	public PersonFace AddFaceToPerson(string groupId, string personId, string userData, FaceRectangle faceRect, byte[] imageBytes)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
 
 		string sFaceRect = faceRect != null ? string.Format("{0},{1},{2},{3}", faceRect.left, faceRect.top, faceRect.width, faceRect.height) : string.Empty;
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}/persistedFaces?userData={3}&targetFace={4}", GetFaceServiceUrl(), groupId, personId, userData, sFaceRect);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/octet-stream", imageBytes, headers, true, false);
-		
+
 		PersonFace face = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			face = JsonUtility.FromJson<PersonFace>(reader.ReadToEnd());
@@ -586,7 +594,7 @@ public class CloudFaceManager : MonoBehaviour
 		{
 			ProcessFaceError(response);
 		}
-		
+
 		return face;
 	}
 
@@ -598,30 +606,30 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="personId">Person ID.</param>
 	public void UpdatePersonData(string groupId, Person person)
 	{
-		if(person == null)
+		if (person == null)
 			return;
 
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, person.personId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		string sJsonContent = JsonUtility.ToJson(new PersonRequest(person.name, person.userData));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "PATCH", "application/json", btContent, headers, true, false);
-		
-		if(CloudWebTools.IsErrorStatus(response))
+
+		if (CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 		}
 	}
-	
-	
+
+
 	/// <summary>
 	/// Deletes existing person from a person group. Persisted face images of the person will also be deleted. 
 	/// </summary>
@@ -629,25 +637,25 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="personId">Person ID.</param>
 	public void DeletePerson(string groupId, string personId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/persons/{2}", GetFaceServiceUrl(), groupId, personId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "DELETE", "application/json", null, headers, true, false);
-		
-		if(CloudWebTools.IsErrorStatus(response))
+
+		if (CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 		}
 	}
-	
-	
+
+
 	/// <summary>
 	/// Trains the person-group.
 	/// </summary>
@@ -655,27 +663,27 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="groupId">Group identifier.</param>
 	public bool TrainPersonGroup(string groupId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/train", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "", null, headers, true, false);
-		
-		if(CloudWebTools.IsErrorStatus(response))
+
+		if (CloudWebTools.IsErrorStatus(response))
 		{
 			ProcessFaceError(response);
 			return false;
 		}
-		
+
 		return true;
 	}
-	
+
 
 	/// <summary>
 	/// Determines whether the person-group's training is finished.
@@ -686,7 +694,7 @@ public class CloudFaceManager : MonoBehaviour
 	{
 		TrainingStatus status = GetPersonGroupTrainingStatus(groupId);
 		bool bSuccess = (status != null && status.status == Status.Succeeded);
-		
+
 		return bSuccess;
 	}
 
@@ -698,20 +706,20 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="groupId">Person-group ID.</param>
 	public TrainingStatus GetPersonGroupTrainingStatus(string groupId)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
-		
+
 		string requestUrl = string.Format("{0}/persongroups/{1}/training", GetFaceServiceUrl(), groupId);
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "GET", "", null, headers, true, false);
-		
+
 		TrainingStatus status = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			status = JsonUtility.FromJson<TrainingStatus>(reader.ReadToEnd());
@@ -723,7 +731,7 @@ public class CloudFaceManager : MonoBehaviour
 
 		return status;
 	}
-	
+
 
 	/// <summary>
 	/// Identifies the given faces.
@@ -734,33 +742,33 @@ public class CloudFaceManager : MonoBehaviour
 	/// <param name="maxCandidates">Maximum allowed candidates pro face.</param>
 	public IdentifyResult[] IdentifyFaces(string groupId, ref Face[] faces, int maxCandidates)
 	{
-		if(string.IsNullOrEmpty(faceSubscriptionKey))
+		if (string.IsNullOrEmpty(faceSubscriptionKey))
 		{
 			throw new Exception("The face-subscription key is not set.");
 		}
 
 		string[] faceIds = new string[faces.Length];
-		for(int i = 0; i < faces.Length; i++)
+		for (int i = 0; i < faces.Length; i++)
 		{
 			faceIds[i] = faces[i].faceId;
 		}
 
-		if(maxCandidates <= 0)
+		if (maxCandidates <= 0)
 		{
 			maxCandidates = 1;
 		}
-		
+
 		string requestUrl = string.Format("{0}/identify", GetFaceServiceUrl());
-		
+
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
-		
+
 		string sJsonContent = JsonUtility.ToJson(new IdentityRequest(groupId, faceIds, maxCandidates));
 		byte[] btContent = Encoding.UTF8.GetBytes(sJsonContent);
 		HttpWebResponse response = CloudWebTools.DoWebRequest(requestUrl, "POST", "application/json", btContent, headers, true, false);
-		
+
 		IdentifyResult[] results = null;
-		if(!CloudWebTools.IsErrorStatus(response))
+		if (!CloudWebTools.IsErrorStatus(response))
 		{
 			StreamReader reader = new StreamReader(response.GetResponseStream());
 			string newJson = "{ \"identityResults\": " + reader.ReadToEnd() + "}";
@@ -771,10 +779,10 @@ public class CloudFaceManager : MonoBehaviour
 		{
 			ProcessFaceError(response);
 		}
-		
+
 		return results;
 	}
-	
+
 
 	/// <summary>
 	/// Matchs the identity candidates to faces.
@@ -785,28 +793,28 @@ public class CloudFaceManager : MonoBehaviour
 	public int MatchCandidatesToFaces(ref Face[] faces, ref IdentifyResult[] identities, string groupId)
 	{
 		int matched = 0;
-		if(faces == null || identities == null)
+		if (faces == null || identities == null)
 			return matched;
 
 		// clear face identities
-		for(int i = 0; i < faces.Length; i++)
+		for (int i = 0; i < faces.Length; i++)
 		{
 			faces[i].candidate = null;
 		}
 
-		foreach(IdentifyResult ident in identities)
+		foreach (IdentifyResult ident in identities)
 		{
 			string faceId = ident.faceId;
-			
-			for(int i = 0; i < faces.Length; i++)
+
+			for (int i = 0; i < faces.Length; i++)
 			{
-				if(faces[i].faceId == faceId)
+				if (faces[i].faceId == faceId)
 				{
-					if(ident.candidates != null && ident.candidates.Length > 0)
+					if (ident.candidates != null && ident.candidates.Length > 0)
 					{
 						faces[i].candidate = ident.candidates[0];
 
-						if(faces[i].candidate != null)
+						if (faces[i].candidate != null)
 						{
 							faces[i].candidate.person = GetPerson(groupId, faces[i].candidate.personId);
 						}
@@ -817,13 +825,13 @@ public class CloudFaceManager : MonoBehaviour
 				}
 			}
 		}
-		
+
 		return matched;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------------- //
-	
+
 	// processes the error status in response
 	private void ProcessFaceError(HttpWebResponse response)
 	{
@@ -856,14 +864,12 @@ public class CloudFaceManager : MonoBehaviour
 			}
 		}
 	}
-	
-	
-//	private JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
-//	{
-//		DateFormatHandling = DateFormatHandling.IsoDateFormat,
-//		NullValueHandling = NullValueHandling.Ignore,
-//		ContractResolver = new CamelCasePropertyNamesContractResolver()
-//	};
 
 
+	//	private JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
+	//	{
+	//		DateFormatHandling = DateFormatHandling.IsoDateFormat,
+	//		NullValueHandling = NullValueHandling.Ignore,
+	//		ContractResolver = new CamelCasePropertyNamesContractResolver()
+	//	};
 }

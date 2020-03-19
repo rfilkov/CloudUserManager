@@ -713,7 +713,7 @@ RectTransform:
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0, y: 1}
 --- !u!114 &412615781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1867,8 +1867,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   faceServiceEndpoint: 
   faceSubscriptionKey: 
-  getFaceLandmarks: 1
-  getFaceId: 1
+  ASK_FACE_LANDMARKS: 1
+  ASK_FACE_ID: 1
 --- !u!4 &1994599328
 Transform:
   m_ObjectHideFlags: 0
@@ -1893,9 +1893,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45359f3cc9a80b14880bf042afe29e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  landmarkVisualizationPrefab: {fileID: 1620026274983886, guid: fe208279e037ea741827279e77a17240,
+  LandmarkVisualizationPrefab: {fileID: 1620026274983886, guid: fe208279e037ea741827279e77a17240,
     type: 2}
-  parentVisualizer: {fileID: 412615780}
+  ParentVisualizer: {fileID: 412615780}
 --- !u!114 &1994599330
 MonoBehaviour:
   m_ObjectHideFlags: 0
