@@ -14,7 +14,7 @@ public class CloudUserManager : MonoBehaviour
 	public bool checkGroupAtStart = true;
 
 	[Tooltip("GUI text used for debug and status messages.")]
-	public GUIText debugText;
+	public UnityEngine.UI.Text debugText;
 
 	// the face manager
 	private CloudFaceManager faceManager = null;

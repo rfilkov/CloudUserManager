@@ -52,7 +52,7 @@ public class CloudFaceDetector : MonoBehaviour
         
         SetHintText(hintMessage);
 
-
+        // lookup the landmarks visualizer component
         faceLandmarkVisualizer = FindObjectOfType<FaceLandmarkVisualizer>();
     }
 
@@ -144,7 +144,10 @@ public class CloudFaceDetector : MonoBehaviour
 			{
 				faces = taskFace.Result;
 
-                if (faceLandmarkVisualizer) faceLandmarkVisualizer.SetTextureSize(texCamShot.width, texCamShot.height);
+                if (faceLandmarkVisualizer)
+                {
+                    faceLandmarkVisualizer.SetTextureSize(texCamShot.width, texCamShot.height);
+                }
 
                 if (faces != null && faces.Length > 0)
 				{
@@ -155,7 +158,10 @@ public class CloudFaceDetector : MonoBehaviour
 					{
 						faceRects[i] = faces[i].faceRectangle;
 
-                        if (faceLandmarkVisualizer) faceLandmarkVisualizer.VisualizeFaceLandmarksNow(faces[i].faceLandmarks);
+                        if (faceManager.getFaceLandmarks && faceLandmarkVisualizer)
+                        {
+                            faceLandmarkVisualizer.VisualizeFaceLandmarks(faces[i].faceLandmarks);
+                        }
                     }
 
 
@@ -262,6 +268,11 @@ public class CloudFaceDetector : MonoBehaviour
         if (resultText)
         {
             resultText.text = "";
+        }
+
+        if(faceLandmarkVisualizer)
+        {
+            faceLandmarkVisualizer.ClearFaceLandmarks();
         }
     }
 

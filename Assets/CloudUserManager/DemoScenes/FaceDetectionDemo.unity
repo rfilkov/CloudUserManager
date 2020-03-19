@@ -1846,6 +1846,7 @@ GameObject:
   - component: {fileID: 1994599328}
   - component: {fileID: 1994599327}
   - component: {fileID: 1994599330}
+  - component: {fileID: 1994599329}
   m_Layer: 0
   m_Name: CloudFaceController
   m_TagString: Untagged
@@ -1866,8 +1867,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   faceServiceEndpoint: 
   faceSubscriptionKey: 
-  ASK_FACE_LANDMARKS: 0
-  ASK_FACE_ID: 1
+  getFaceLandmarks: 1
+  getFaceId: 1
 --- !u!4 &1994599328
 Transform:
   m_ObjectHideFlags: 0
@@ -1881,6 +1882,20 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1994599329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1994599326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45359f3cc9a80b14880bf042afe29e38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  landmarkVisualizationPrefab: {fileID: 1620026274983886, guid: fe208279e037ea741827279e77a17240,
+    type: 2}
+  parentVisualizer: {fileID: 412615780}
 --- !u!114 &1994599330
 MonoBehaviour:
   m_ObjectHideFlags: 0

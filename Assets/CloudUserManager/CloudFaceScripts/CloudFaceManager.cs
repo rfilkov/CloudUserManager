@@ -12,10 +12,9 @@ using System.Threading;
 
 public class CloudFaceManager : MonoBehaviour
 {
-	[Tooltip("Service endpoint.")]
+	[Tooltip("Face service endpoint.")]
 	//public string faceServiceLocation = "westus";
 	public string faceServiceEndpoint = string.Empty;
-
 
 	[Tooltip("Subscription key for Face API.")]
 	public string faceSubscriptionKey;
@@ -38,9 +37,12 @@ public class CloudFaceManager : MonoBehaviour
 	private bool isInitialized = false;
 
 
-	/*  SHACHAR ADDITION */
-	public bool ASK_FACE_LANDMARKS = true;
-	public bool ASK_FACE_ID = true;
+    /*  SHACHAR ADDITION */
+    [Tooltip("Whether to get the face landmarks info, as well.")]
+    public bool getFaceLandmarks = false;
+
+    [Tooltip("Whether to get the face IDs, as well.")]
+    public bool getFaceId = true;
 	/*  END SHACHAR ADDITION */
 
 
@@ -131,7 +133,7 @@ public class CloudFaceManager : MonoBehaviour
 		}
 
 		string requestUrl = string.Format("{0}/detect?returnFaceId={1}&returnFaceLandmarks={2}&returnFaceAttributes={3}",
-			GetFaceServiceUrl(), ASK_FACE_ID, ASK_FACE_LANDMARKS, "age,gender,smile,headPose");
+			GetFaceServiceUrl(), getFaceId, getFaceLandmarks, "age,gender,smile,headPose");
 
 		Dictionary<string, string> headers = new Dictionary<string, string>();
 		headers.Add("ocp-apim-subscription-key", faceSubscriptionKey);
