@@ -102,13 +102,16 @@ public class CloudUserManager : MonoBehaviour
 		} 
 		catch (Exception ex) 
 		{
-			Debug.LogError(ex.Message + '\n' + ex.StackTrace);
+            if(ex != null)
+            {
+                Debug.LogError(ex.Message + '\n' + ex.StackTrace);
 
-			if(debugText != null)
-			{
-				debugText.text = ex.Message;
-			}
-		}
+                if (debugText != null)
+                {
+                    debugText.text = ex.Message;
+                }
+            }
+        }
 	}
 	
 	void Update () 
@@ -244,7 +247,7 @@ public class CloudUserManager : MonoBehaviour
 						bEmptyGroup = true;
 					}
 				}
-				else if(training.status == Status.Succeeded && training.message.StartsWith("There is no person"))
+				else if(training.status == Status.Succeeded && training.message != null && training.message.StartsWith("There is no person"))
 				{
 					// the group exists but it's empty
 					bEmptyGroup = true;
@@ -317,7 +320,7 @@ public class CloudUserManager : MonoBehaviour
 		Person person = null;
 		if(faceManager != null && !string.IsNullOrEmpty(userGroupId))
 		{
-			person = faceManager.GetPerson(userGroupId, personId);
+			person = faceManager.GetPersonData(userGroupId, personId);
 		}
 		
 		return person;
@@ -587,7 +590,8 @@ public class CloudUserManager : MonoBehaviour
 			} 
 			catch (Exception ex) 
 			{
-				Debug.Log(ex.Message);
+                if(ex != null)
+				    Debug.Log(ex.Message);
 				Debug.Log("Trying to create user-group '" + userGroupId + "'...");
 
 				if(faceManager.CreatePersonGroup(userGroupId, userGroupId, string.Empty))

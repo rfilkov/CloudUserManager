@@ -21,6 +21,10 @@ public class CloudWebTools
 			webRequest.ContentType = contentType;
 			webRequest.ContentLength = content.Length;
 		}
+        else
+        {
+            webRequest.ContentLength = 0;
+        }
 
 		foreach(string hName in headers.Keys)
 		{
@@ -100,10 +104,21 @@ public class CloudWebTools
 	}
 	
 	// checks if the response status is error
-	public static bool IsErrorStatus(HttpWebResponse response)
+	public static bool IsErrorStatus(HttpWebResponse response, string caller)
 	{
 		int status = GetStatusCode(response);
-		return (status >= 300);
+        bool bErrorStatus = (status >= 300);
+
+        string respText = string.Empty;
+        if (bErrorStatus)
+        {
+            StreamReader reader = new StreamReader(response.GetResponseStream());
+            respText = reader.ReadToEnd();
+
+            Debug.LogError("Status: " + status + " returned by: " + caller + "\n" + respText);
+        }
+
+        return bErrorStatus;
 	}
 	
 	// returns the response status message

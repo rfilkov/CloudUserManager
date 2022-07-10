@@ -30,7 +30,7 @@ public static class FaceDetectionUtils
         return tex;
     }
 
-    public static string FaceToString(Face face, string faceColorName)
+    public static string FaceToString(Face face, string faceColorName, bool recognizeEmotions)
     {
         StringBuilder sbResult = new StringBuilder();
 
@@ -43,10 +43,12 @@ public static class FaceDetectionUtils
 //			sbResult.Append(string.Format("  • Moustache: {0}", face.FaceAttributes.FacialHair.Moustache)).AppendLine();
 //			sbResult.Append(string.Format("  • Sideburns: {0}", face.FaceAttributes.FacialHair.Sideburns)).AppendLine().AppendLine();
 
-		if(face.emotion != null && face.emotion.scores != null)
-			sbResult.Append(string.Format("  • Emotion: {0}", GetEmotionScoresAsString(face.emotion))).AppendLine();
+		if(recognizeEmotions && face.faceAttributes.emotion != null)
+        {
+            sbResult.Append(string.Format("  • Emotion: {0}", GetEmotionScoresAsString(face.faceAttributes.emotion))).AppendLine();
+        }
 
-		sbResult.AppendLine();
+        sbResult.AppendLine();
 
         return sbResult.ToString();
     }
@@ -59,28 +61,27 @@ public static class FaceDetectionUtils
 	/// <param name="emotion">Emotion.</param>
 	public static string GetEmotionScoresAsString(Emotion emotion)
 	{
-		if(emotion == null || emotion.scores == null)
+		if(emotion == null)
 			return string.Empty;
 		
-		Scores es = emotion.scores; 
 		StringBuilder emotStr = new StringBuilder();
 		
-		if(es.anger >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% angry,", es.anger * 100f);
-		if(es.contempt >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% contemptuous,", es.contempt * 100f);
-		if(es.disgust >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% disgusted,", es.disgust * 100f);
-		if(es.fear >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% scared,", es.fear * 100f);
-		if(es.happiness >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% happy,", es.happiness * 100f);
-		if(es.neutral >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% neutral,", es.neutral * 100f);
-		if(es.sadness >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% sad,", es.sadness * 100f);
-		if(es.surprise >= 0.01f) 
-			emotStr.AppendFormat(" {0:F0}% surprised,", es.surprise * 100f);
+		if(emotion.anger >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% angry,", emotion.anger * 100f);
+		if(emotion.contempt >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% contemptuous,", emotion.contempt * 100f);
+		if(emotion.disgust >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% disgusted,", emotion.disgust * 100f);
+		if(emotion.fear >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% scared,", emotion.fear * 100f);
+		if(emotion.happiness >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% happy,", emotion.happiness * 100f);
+		if(emotion.neutral >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% neutral,", emotion.neutral * 100f);
+		if(emotion.sadness >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% sad,", emotion.sadness * 100f);
+		if(emotion.surprise >= 0.01f) 
+			emotStr.AppendFormat(" {0:F0}% surprised,", emotion.surprise * 100f);
 		
 		if(emotStr.Length > 0)
 		{
@@ -92,38 +93,36 @@ public static class FaceDetectionUtils
 	}
 	
 	
-	/// <summary>
-	/// Gets the emotion scores as list of strings.
-	/// </summary>
-	/// <returns>The emotion as string.</returns>
-	/// <param name="emotion">Emotion.</param>
-	public static List<string> GetEmotionScoresList(Emotion emotion)
-	{
-		List<string> alScores = new List<string>();
-		if(emotion == null || emotion.scores == null)
-			return alScores;
+	///// <summary>
+	///// Gets the emotion scores as list of strings.
+	///// </summary>
+	///// <returns>The emotion as string.</returns>
+	///// <param name="emotion">Emotion.</param>
+	//public static List<string> GetEmotionScoresList(Emotion emotion)
+	//{
+	//	List<string> alScores = new List<string>();
+	//	if(emotion == null)
+	//		return alScores;
 		
-		Scores es = emotion.scores; 
+	//	if(emotion.anger >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% angry", emotion.anger * 100f));
+	//	if(emotion.contempt >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% contemptuous", emotion.contempt * 100f));
+	//	if(emotion.disgust >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% disgusted,", emotion.disgust * 100f));
+	//	if(emotion.fear >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% scared", emotion.fear * 100f));
+	//	if(emotion.happiness >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% happy", emotion.happiness * 100f));
+	//	if(emotion.neutral >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% neutral", emotion.neutral * 100f));
+	//	if(emotion.sadness >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% sad", emotion.sadness * 100f));
+	//	if(emotion.surprise >= 0.01f) 
+	//		alScores.Add(string.Format("{0:F0}% surprised", emotion.surprise * 100f));
 		
-		if(es.anger >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% angry", es.anger * 100f));
-		if(es.contempt >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% contemptuous", es.contempt * 100f));
-		if(es.disgust >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% disgusted,", es.disgust * 100f));
-		if(es.fear >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% scared", es.fear * 100f));
-		if(es.happiness >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% happy", es.happiness * 100f));
-		if(es.neutral >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% neutral", es.neutral * 100f));
-		if(es.sadness >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% sad", es.sadness * 100f));
-		if(es.surprise >= 0.01f) 
-			alScores.Add(string.Format("{0:F0}% surprised", es.surprise * 100f));
-		
-		return alScores;
-	}
+	//	return alScores;
+	//}
 
     public static Color[] FaceColors { get { return faceColors; } }
     public static string[] FaceColorNames { get { return faceColorNames; } }

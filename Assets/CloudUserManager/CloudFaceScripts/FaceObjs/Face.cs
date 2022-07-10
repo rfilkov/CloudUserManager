@@ -47,12 +47,6 @@ public class Face
 	public FaceAttributes faceAttributes;
 
 	/// <summary>
-	/// Gets or sets the emotion.
-	/// </summary>
-	/// <value>The emotion.</value>
-	public Emotion emotion;
-
-	/// <summary>
 	/// Gets or sets the identified candidate.
 	/// </summary>
 	/// <value>The identified candidate.</value>

@@ -9,3 +9,6 @@
 /Temp/
 /.vs/
 *.csproj
+/Logs/
+/.vsconfig
+/UserSettings/

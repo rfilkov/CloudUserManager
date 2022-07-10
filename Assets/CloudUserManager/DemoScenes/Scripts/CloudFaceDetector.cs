@@ -11,8 +11,8 @@ public class CloudFaceDetector : MonoBehaviour
 	[Tooltip("Image component used for rendering camera shots")]
     public RawImage cameraShot;
 
-	[Tooltip("Whether to recognize the emotions of the detected faces, or not.")]
-	private bool recognizeEmotions = false;
+	//[Tooltip("Whether to recognize the emotions of the detected faces, or not.")]
+	//private bool recognizeEmotions = false;
 
 //	[Tooltip("Whether to draw rectangles around the detected faces on the picture.")]
 //	public bool displayFaceRectangles = true;
@@ -167,37 +167,37 @@ public class CloudFaceDetector : MonoBehaviour
 
                     yield return null;
 
-					// get the emotions of the faces
-					if(recognizeEmotions)
-					{
-						//Emotion[] emotions = faceManager.RecognizeEmotions(texCamShot, faceRects);
-						AsyncTask<Emotion[]> taskEmot = new AsyncTask<Emotion[]>(() => {
-							return faceManager.RecognizeEmotions(imageBytes, faceRects);
-						});
+					//// get the emotions of the faces
+					//if(recognizeEmotions)
+					//{
+					//	//Emotion[] emotions = faceManager.RecognizeEmotions(texCamShot, faceRects);
+					//	AsyncTask<Emotion[]> taskEmot = new AsyncTask<Emotion[]>(() => {
+					//		return faceManager.RecognizeEmotions(imageBytes, faceRects);
+					//	});
 
-						taskEmot.Start();
-						yield return null;
+					//	taskEmot.Start();
+					//	yield return null;
 
-						while (taskEmot.State == TaskState.Running)
-						{
-							yield return null;
-						}
+					//	while (taskEmot.State == TaskState.Running)
+					//	{
+					//		yield return null;
+					//	}
 
-						if(string.IsNullOrEmpty(taskEmot.ErrorMessage))
-						{
-							Emotion[] emotions = taskEmot.Result;
-							int matched = faceManager.MatchEmotionsToFaces(ref faces, ref emotions);
+					//	if(string.IsNullOrEmpty(taskEmot.ErrorMessage))
+					//	{
+					//		Emotion[] emotions = taskEmot.Result;
+					//		int matched = faceManager.MatchEmotionsToFaces(ref faces, ref emotions);
 
-							if(matched != faces.Length)
-							{
-								Debug.Log(string.Format("Matched {0}/{1} emotions to {2} faces.", matched, emotions.Length, faces.Length));
-							}
-						}
-						else
-						{
-							SetHintText(taskEmot.ErrorMessage);
-						}
-					}
+					//		if(matched != faces.Length)
+					//		{
+					//			Debug.Log(string.Format("Matched {0}/{1} emotions to {2} faces.", matched, emotions.Length, faces.Length));
+					//		}
+					//	}
+					//	else
+					//	{
+					//		SetHintText(taskEmot.ErrorMessage);
+					//	}
+					//}
 
 					CloudFaceManager.DrawFaceRects(texCamShot, faces, FaceDetectionUtils.FaceColors);
 					//SetHintText("Click on the camera image to make a shot");
@@ -244,7 +244,7 @@ public class CloudFaceDetector : MonoBehaviour
                 Face face = faces[i];
                 string faceColorName = FaceDetectionUtils.FaceColorNames[i % FaceDetectionUtils.FaceColors.Length];
 
-                string res = FaceDetectionUtils.FaceToString(face, faceColorName);
+                string res = FaceDetectionUtils.FaceToString(face, faceColorName, CloudFaceManager.Instance.recognizeEmotions);
 
                 sbResult.Append(string.Format("<color={0}>{1}</color>", faceColorName, res));
             }

@@ -12,20 +12,44 @@ public class EmotionCollection
 public class Emotion
 {
     /// <summary>
-    /// Gets or sets the face rectangle.
+    /// 
     /// </summary>
-    /// <value>
-    /// The face rectangle.
-    /// </value>
-	public FaceRectangle faceRectangle;
+	public float anger;
 
     /// <summary>
-    /// Gets or sets the emotion scores.
+    /// 
     /// </summary>
-    /// <value>
-    /// The emotion scores.
-    /// </value>
-	public Scores scores;
+	public float contempt;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float disgust;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float fear;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float happiness;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float neutral;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float sadness;
+
+    /// <summary>
+    /// 
+    /// </summary>
+	public float surprise;
 
 
     public override bool Equals(object o)
@@ -33,34 +57,26 @@ public class Emotion
         if (o == null) return false;
 
         var other = o as Emotion;
-
         if (other == null) return false;
 
-        if (this.faceRectangle == null)
-        {
-            if (other.faceRectangle != null) return false;
-        }
-        else
-        {
-            if (!this.faceRectangle.Equals(other.faceRectangle)) return false;
-        }
-
-        if (this.scores == null)
-        {
-            return other.scores == null;
-        }
-        else
-        {
-            return this.scores.Equals(other.scores);
-        }
+        return this.anger == other.anger &&
+            this.disgust == other.disgust &&
+            this.fear == other.fear &&
+            this.happiness == other.happiness &&
+            this.neutral == other.neutral &&
+            this.sadness == other.sadness &&
+            this.surprise == other.surprise;
     }
 
     public override int GetHashCode()
     {
-        int r = (faceRectangle == null) ? 0x33333333 : faceRectangle.GetHashCode();
-        int s = (scores == null) ? 0xccccccc : scores.GetHashCode();
-
-        return r ^ s;
+        return anger.GetHashCode() ^
+            disgust.GetHashCode() ^
+            fear.GetHashCode() ^
+            happiness.GetHashCode() ^
+            neutral.GetHashCode() ^
+            sadness.GetHashCode() ^
+            surprise.GetHashCode();
     }
 
 }

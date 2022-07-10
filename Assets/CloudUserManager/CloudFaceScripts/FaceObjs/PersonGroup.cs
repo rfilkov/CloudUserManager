@@ -20,7 +20,15 @@ public class PersonGroupRequest
 [Serializable]
 public class PersonGroup
 {
-	
+
+    /// <summary>
+    /// Gets or sets the name.
+    /// </summary>
+    /// <value>
+    /// The name of the person group.
+    /// </value>
+    public string name;
+
     /// <summary>
     /// Gets or sets the person group identifier.
     /// </summary>
@@ -30,12 +38,12 @@ public class PersonGroup
 	public string personGroupId;
 
     /// <summary>
-    /// Gets or sets the name.
+    /// Gets or sets the recognition model.
     /// </summary>
     /// <value>
-    /// The name of the person group.
+    /// The recognition model used in the person group.
     /// </value>
-	public string name;
+    public string recognitionModel;
 
     /// <summary>
     /// Gets or sets the user data.

@@ -6,14 +6,14 @@
 [Serializable]
 public class FaceAttributes
 {
-	
+
     /// <summary>
     /// Gets or sets the age value.
     /// </summary>
     /// <value>
     /// The age value.
     /// </value>
-	public float age;
+    public float age;
 
     /// <summary>
     /// Gets or sets the gender.
@@ -22,14 +22,6 @@ public class FaceAttributes
     /// The gender.
     /// </value>
 	public string gender;
-
-    /// <summary>
-    /// Gets or sets the head pose.
-    /// </summary>
-    /// <value>
-    /// The head pose.
-    /// </value>
-	public HeadPose headPose;
 
     /// <summary>
     /// Gets or sets the smile value. Represents the confidence of face is smiling.
@@ -46,5 +38,27 @@ public class FaceAttributes
     /// The facial hair.
     /// </value>
 	public FacialHair facialHair;
+
+    /// <summary>
+    /// Gets or sets the glasses value - whether there are sunglasses or not.
+    /// </summary>
+    /// <value>
+    /// The glasses value.
+    /// </value>
+    public string glasses;
+
+    /// <summary>
+    /// Gets or sets the head pose.
+    /// </summary>
+    /// <value>
+    /// The head pose.
+    /// </value>
+	public HeadPose headPose;
+
+    /// <summary>
+    /// Gets or sets the emotion.
+    /// </summary>
+    /// <value>The emotion.</value>
+    public Emotion emotion;
 
 }
